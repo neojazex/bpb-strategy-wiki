@@ -14,7 +14,7 @@ export default function ShapeGrid({ shape }: Props) {
       {shape.flatMap((row, r) =>
         Array.from({ length: cols }).map((_, c) => {
           const v = row[c] ?? 0;
-          const cls = v === 0 ? 'shape-cell empty' : v === 2 ? 'shape-cell socket' : 'shape-cell fill';
+          const cls = v === 0 ? 'shape-cell' : v === 2 ? 'shape-cell socket' : 'shape-cell fill';
           return <div key={`${r}-${c}`} className={cls} />;
         })
       )}
