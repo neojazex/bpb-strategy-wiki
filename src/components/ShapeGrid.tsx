@@ -5,7 +5,6 @@ interface Props {
 }
 
 const TILE: Record<number, string> = {
-  1: '/images/tiles/AffectedTile.webp',
   2: '/images/tiles/AffectedTile_noEffect.webp',
   3: '/images/tiles/AffectedTile_secondary_noEffect.webp',
   4: '/images/tiles/AffectedTile_tertiary_noEffect.webp',
