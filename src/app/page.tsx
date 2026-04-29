@@ -141,6 +141,8 @@ function HomePage({ items, onTab, onSelectItem }: { items: Item[]; onTab: (t: Ta
   );
 }
 
+const TYPE_ICONS = new Set(['Dark', 'Effect', 'Holy', 'Ice', 'Magic', 'Melee', 'Musical', 'Nature', 'Ranged', 'Treasure', 'Vampiric']);
+
 function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }: {
   item: Item; allItems: Item[]; onClose: () => void;
   onSelectItem: (i: Item) => void; onNavigateEffect: (e: string) => void;
@@ -184,7 +186,12 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
           <div className="detail-sub">
             <span className="rarity-badge" style={{ background: `var(--r-${k})` }}>{item.rarity}</span>
             <span className="dot" /><span>{item.type}</span>
-            {item.extraTypes?.map(t => <span key={t} className="type-chip">{t}</span>)}
+            {item.extraTypes?.map(t => TYPE_ICONS.has(t) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <span key={t} className="type-icon-chip" title={t}><img src={`/images/icons/Icon_${t}.webp`} alt={t} /></span>
+            ) : (
+              <span key={t} className="type-chip">{t}</span>
+            ))}
           </div>
           {item.sockets && item.sockets.length > 0 && (
             <div className="detail-sub" style={{ marginTop: 6 }}>
