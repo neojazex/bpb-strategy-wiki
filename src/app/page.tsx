@@ -141,7 +141,7 @@ function HomePage({ items, onTab, onSelectItem }: { items: Item[]; onTab: (t: Ta
   );
 }
 
-const TYPE_ICONS = new Set(['Dark', 'Effect', 'Holy', 'Ice', 'Magic', 'Melee', 'Musical', 'Nature', 'Ranged', 'Treasure', 'Vampiric']);
+const TYPE_ICONS = new Set(['Dark', 'Effect', 'Fire', 'Holy', 'Ice', 'Magic', 'Melee', 'Musical', 'Nature', 'Ranged', 'Treasure', 'Vampiric']);
 
 function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }: {
   item: Item; allItems: Item[]; onClose: () => void;
