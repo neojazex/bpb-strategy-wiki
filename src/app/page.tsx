@@ -313,8 +313,16 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
     if (q) list = list.filter(i => i.name.toLowerCase().includes(q) || (i.effect ?? '').toLowerCase().includes(q));
     if (rarityF !== 'All') list = list.filter(i => i.rarity === rarityF);
     if (typeF !== 'All') list = list.filter(i => i.type === typeF);
-    const order = Object.fromEntries(RARITY_ORDER.map((r, i) => [r, i]));
-    return [...list].sort((a, b) => (order[a.rarity] ?? 99) - (order[b.rarity] ?? 99) || a.name.localeCompare(b.name));
+    const rarityOrd = Object.fromEntries(RARITY_ORDER.map((r, i) => [r, i]));
+    // Neutral (no sockets) = 0, then classes in CHARACTERS order (1-based), unknown = 99
+    const classOrd: Record<string, number> = { Neutral: 0 };
+    CHARACTERS.forEach((c, i) => { classOrd[c.id] = i + 1; });
+    const classKey = (it: Item) => it.sockets?.length ? classOrd[it.sockets[0]] ?? 99 : 0;
+    return [...list].sort((a, b) =>
+      (rarityOrd[a.rarity] ?? 99) - (rarityOrd[b.rarity] ?? 99) ||
+      classKey(a) - classKey(b) ||
+      a.name.localeCompare(b.name)
+    );
   }, [items, query, rarityF, typeF, charF, focusEffect]);
 
   const PAGE_SIZE = 48;
