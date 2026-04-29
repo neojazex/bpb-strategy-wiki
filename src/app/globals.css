@@ -176,7 +176,7 @@ button { font-family: inherit; cursor: pointer; }
 .detail-panel { position: sticky; top: 96px; background: var(--bg-card); border: 1px solid var(--rule); border-radius: 12px; padding: 24px; box-shadow: var(--shadow-lg); border-top: 3px solid var(--rarity, var(--accent)); max-height: calc(100vh - 120px); overflow-y: auto; }
 .detail-panel.has-frame { background: transparent; border: none; border-radius: 0; box-shadow: none; border-top: none; padding: 0; overflow: hidden; }
 .detail-panel.has-frame::before { content: ''; position: absolute; inset: 0; background-image: var(--frame-url); background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none; z-index: 0; }
-.detail-scroll { position: relative; z-index: 1; overflow-y: auto; max-height: calc(100vh - 120px); padding: 28px 22px 48px; }
+.detail-scroll { position: relative; z-index: 1; overflow-y: auto; max-height: calc(100vh - 120px); padding: 44px 24px 56px; margin-right: 8px; }
 .tooltip-divider { display: block; width: calc(100% + 4px); margin: 8px -2px 14px; pointer-events: none; }
 .detail-panel.has-frame .stat-row { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.12); border-radius: 6px; }
 .detail-panel.has-frame .stat-cell { background: transparent; }
@@ -186,6 +186,15 @@ button { font-family: inherit; cursor: pointer; }
 .detail-panel.has-frame .detail-head .icon-wrap { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.15); }
 .detail-panel.has-frame .detail-name { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
 .detail-panel.has-frame .detail-sub { color: rgba(255,255,255,0.7); }
+.detail-panel.has-frame .shape-grid { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.12); }
+.detail-panel.has-frame .shape-cell { background: rgba(0,0,0,0.15); }
+.detail-panel.has-frame .suggest-input,
+.detail-panel.has-frame .comment-input { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.18); color: #fff; }
+.detail-panel.has-frame .suggest-input::placeholder,
+.detail-panel.has-frame .comment-input::placeholder { color: rgba(255,255,255,0.4); }
+.detail-panel.has-frame .suggest-dropdown { background: rgba(50,30,15,0.97); border-color: rgba(255,255,255,0.15); }
+.detail-panel.has-frame .suggest-option:hover { background: rgba(255,255,255,0.1); }
+.detail-panel.has-frame .comment-card { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.12); }
 .detail-close { position: absolute; top: 16px; right: 16px; width: 28px; height: 28px; background: transparent; border: 1px solid var(--rule); border-radius: 6px; color: var(--ink-3); font-size: 1rem; line-height: 0; display: grid; place-items: center; }
 .detail-close:hover { background: var(--bg-soft); color: var(--ink); }
 .detail-head { display: grid; grid-template-columns: 72px 1fr; gap: 14px; margin-bottom: 20px; padding-right: 36px; }
