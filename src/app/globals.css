@@ -181,6 +181,7 @@ button { font-family: inherit; cursor: pointer; }
 .detail-scroll::-webkit-scrollbar-track { background: transparent; }
 .detail-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 999px; }
 .tooltip-divider { display: block; width: calc(100% + 4px); margin: 8px -2px 14px; pointer-events: none; }
+.detail-panel.has-frame .detail-scroll { color: rgba(255,255,255,0.9); text-shadow: 0 1px 2px rgba(0,0,0,0.55); }
 .detail-panel.has-frame .stat-row { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.12); border-radius: 6px; }
 .detail-panel.has-frame .stat-cell { background: transparent; }
 .detail-panel.has-frame .stat-cell .lbl { color: rgba(255,255,255,0.55); }
