@@ -128,6 +128,11 @@ button { font-family: inherit; cursor: pointer; }
 .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .count-pill { font-size: 0.78rem; font-weight: 500; color: var(--ink-3); padding: 6px 12px; background: var(--bg-soft); border-radius: 6px; }
 .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 24px; flex-wrap: wrap; }
+.pg-btn { min-width: 34px; height: 34px; padding: 0 8px; background: var(--bg-card); border: 1px solid var(--rule); border-radius: 6px; font-size: 0.85rem; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.1s; }
+.pg-btn:hover:not(:disabled) { border-color: var(--rule-2); color: var(--ink); }
+.pg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.pg-btn:disabled { opacity: 0.35; cursor: default; }
 .filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: var(--bg-card); border: 1px solid var(--rule); border-radius: 999px; font-size: 0.78rem; font-weight: 500; color: var(--ink-2); transition: all 0.1s; }
 .filter-chip:hover { border-color: var(--rule-2); color: var(--ink); }
 .filter-chip.active { background: var(--ink); border-color: var(--ink); color: var(--bg); }

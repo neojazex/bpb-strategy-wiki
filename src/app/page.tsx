@@ -297,8 +297,10 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
   const [rarityF, setRarityF] = useState('All');
   const [typeF, setTypeF] = useState('All');
   const [charF, setCharF] = useState('All');
+  const [page, setPage] = useState(1);
 
   useEffect(() => { if (focusCharId) setCharF(focusCharId); }, [focusCharId]);
+  useEffect(() => { setPage(1); }, [query, rarityF, typeF, charF, focusEffect]);
 
   const types = useMemo(() => ['All', ...Array.from(new Set(items.map(i => i.type))).sort()], [items]);
 
@@ -314,6 +316,10 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
     const order = Object.fromEntries(RARITY_ORDER.map((r, i) => [r, i]));
     return [...list].sort((a, b) => (order[a.rarity] ?? 99) - (order[b.rarity] ?? 99) || a.name.localeCompare(b.name));
   }, [items, query, rarityF, typeF, charF, focusEffect]);
+
+  const PAGE_SIZE = 48;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div>
@@ -362,7 +368,7 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
       <div className={`items-layout${selected ? ' with-detail' : ''}`}>
         <div className="items-grid">
           {filtered.length === 0 && <div className="empty">No items match those filters.</div>}
-          {filtered.slice(0, 240).map(it => {
+          {paginated.map(it => {
             const k = rarityKey(it.rarity);
             const charId = Array.isArray(it.sockets) && it.sockets[0];
             const char = charId ? CHARACTERS.find(c => c.id === charId) : null;
@@ -390,13 +396,21 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
               </div>
             );
           })}
-          {filtered.length > 240 && <div className="empty">Showing first 240 of {filtered.length}. Refine filters to narrow.</div>}
         </div>
         {selected && (
           <DetailPanel item={selected} allItems={items} onClose={onClose}
             onSelectItem={onSelect} onNavigateEffect={onNavigateEffect} />
         )}
       </div>
+      {pageCount > 1 && (
+        <div className="pagination">
+          <button className="pg-btn" onClick={() => setPage(p => p - 1)} disabled={page === 1}>←</button>
+          {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+            <button key={n} className={`pg-btn${n === page ? ' active' : ''}`} onClick={() => setPage(n)}>{n}</button>
+          ))}
+          <button className="pg-btn" onClick={() => setPage(p => p + 1)} disabled={page === pageCount}>→</button>
+        </div>
+      )}
     </div>
   );
 }
