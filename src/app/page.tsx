@@ -14,8 +14,9 @@ import CommentsPanel from '@/components/CommentsPanel';
 
 type Tab = 'home' | 'items' | 'characters' | 'effects' | 'strategies';
 
-function Topbar({ tab, onTab, theme, onToggleTheme }: {
+function Topbar({ tab, onTab, theme, onToggleTheme, gameFont, onToggleFont }: {
   tab: Tab; onTab: (t: Tab) => void; theme: string; onToggleTheme: () => void;
+  gameFont: boolean; onToggleFont: () => void;
 }) {
   return (
     <header className="topbar">
@@ -32,6 +33,9 @@ function Topbar({ tab, onTab, theme, onToggleTheme }: {
             </button>
           ))}
         </nav>
+        <button className={`font-toggle${gameFont ? ' game' : ''}`} onClick={onToggleFont} title={gameFont ? 'Switch to system font' : 'Switch to game font'}>
+          {gameFont ? 'Aa' : 'Aa'}
+        </button>
         <button className="theme-toggle" onClick={onToggleTheme}>
           {theme === 'light' ? '☾ Dark' : '☀ Light'}
         </button>
@@ -534,6 +538,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [selected, setSelected] = useState<Item | null>(null);
   const [theme, setTheme] = useState('light');
+  const [gameFont, setGameFont] = useState(true);
   const [focusCharId, setFocusCharId] = useState<string | null>(null);
   const [focusEffect, setFocusEffect] = useState<string | null>(null);
 
@@ -541,6 +546,9 @@ export default function App() {
     const saved = localStorage.getItem('bpb_theme') ?? 'light';
     setTheme(saved);
     document.documentElement.setAttribute('data-theme', saved);
+    const savedFont = localStorage.getItem('bpb_font') ?? 'game';
+    setGameFont(savedFont === 'game');
+    document.documentElement.setAttribute('data-font', savedFont);
   }, []);
 
   useEffect(() => {
@@ -553,6 +561,13 @@ export default function App() {
     localStorage.setItem('bpb_theme', next);
     document.documentElement.setAttribute('data-theme', next);
   }, [theme]);
+
+  const toggleFont = useCallback(() => {
+    const next = gameFont ? 'system' : 'game';
+    setGameFont(!gameFont);
+    localStorage.setItem('bpb_font', next);
+    document.documentElement.setAttribute('data-font', next);
+  }, [gameFont]);
 
   const goTab = useCallback((t: Tab, opts?: { charId?: string; effect?: string }) => {
     setTab(t);
@@ -584,7 +599,7 @@ export default function App() {
 
   return (
     <>
-      <Topbar tab={tab} onTab={goTab} theme={theme} onToggleTheme={toggleTheme} />
+      <Topbar tab={tab} onTab={goTab} theme={theme} onToggleTheme={toggleTheme} gameFont={gameFont} onToggleFont={toggleFont} />
       <main className="shell">
         {tab !== 'home' && (
           <div className="section-head">

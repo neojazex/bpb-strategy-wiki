@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Milonga&display=swap');
 
 :root {
   --s-50:  #f8fafc; --s-100: #f1f5f9; --s-200: #e2e8f0; --s-300: #cbd5e1;
@@ -34,11 +34,16 @@ body {
   font-size: 15px; line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-h1,h2,h3,h4 { font-family: "Inter", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--ink); margin: 0; }
-h1 { font-size: 3rem; font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; }
-h2 { font-size: 1.75rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.025em; }
-h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.3; }
-h4 { font-size: 0.875rem; font-weight: 600; line-height: 1.3; }
+h1,h2,h3,h4 { font-family: "Milonga", "Inter", system-ui, serif; letter-spacing: 0; color: var(--ink); margin: 0; }
+h1 { font-size: 3rem; font-weight: 400; line-height: 1.1; }
+h2 { font-size: 1.75rem; font-weight: 400; line-height: 1.2; }
+h3 { font-size: 1.125rem; font-weight: 400; line-height: 1.3; }
+h4 { font-size: 0.875rem; font-weight: 400; line-height: 1.3; }
+.detail-name, .item-name { font-family: "Milonga", "Inter", system-ui, serif; }
+/* Font toggle: data-font="system" reverts to Inter for comparison */
+[data-font="system"] h1,[data-font="system"] h2,[data-font="system"] h3,[data-font="system"] h4 { font-family: "Inter", system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+[data-font="system"] h1 { font-weight: 800; letter-spacing: -0.035em; }
+[data-font="system"] .detail-name,[data-font="system"] .item-name { font-family: "Inter", system-ui, sans-serif; }
 p { margin: 0; color: var(--ink-2); }
 a { color: var(--accent); text-decoration: none; cursor: pointer; }
 a:hover { color: var(--accent-2); }
@@ -59,6 +64,9 @@ button { font-family: inherit; cursor: pointer; }
 .nav button.active { color: var(--accent); background: var(--accent-soft); }
 .theme-toggle { background: var(--bg-card); border: 1px solid var(--rule); color: var(--ink-2); padding: 7px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: border-color 0.12s, color 0.12s; }
 .theme-toggle:hover { color: var(--ink); border-color: var(--rule-2); }
+.font-toggle { background: var(--bg-card); border: 1px solid var(--rule); color: var(--ink-2); padding: 7px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: border-color 0.12s, color 0.12s; }
+.font-toggle:hover { color: var(--ink); border-color: var(--rule-2); }
+.font-toggle.game { font-family: "Milonga", serif; font-size: 0.85rem; }
 
 .shell { max-width: 1280px; margin: 0 auto; padding: 56px 32px 96px; }
 .section-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 32px; }
