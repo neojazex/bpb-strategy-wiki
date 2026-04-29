@@ -185,6 +185,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
 
   return (
     <aside className="detail-panel has-frame" style={{ '--rarity': `var(--r-${k})`, '--frame-url': `url('/images/tooltip/TooltipBase_${item.rarity}.webp')` } as React.CSSProperties}>
+      <div className="detail-scroll">
       <button className="detail-close" onClick={onClose}>×</button>
       <div className="detail-head">
         <div className="icon-wrap"><ItemIcon key={item.gid} item={item} /></div>
@@ -291,6 +292,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
           </div>
         </div>
       )}
+      </div>
     </aside>
   );
 }
