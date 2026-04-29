@@ -181,8 +181,10 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
     return Array.from(set);
   }, [item.effect]);
 
+  const dividerSrc = `/images/tooltip/Divider2_${item.rarity}.webp`;
+
   return (
-    <aside className="detail-panel" style={{ '--rarity': `var(--r-${k})` } as React.CSSProperties}>
+    <aside className="detail-panel has-frame" style={{ '--rarity': `var(--r-${k})`, '--frame-url': `url('/images/tooltip/TooltipBase_${item.rarity}.webp')` } as React.CSSProperties}>
       <button className="detail-close" onClick={onClose}>×</button>
       <div className="detail-head">
         <div className="icon-wrap"><ItemIcon key={item.gid} item={item} /></div>
@@ -217,6 +219,8 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
           )}
         </div>
       </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="tooltip-divider" src={dividerSrc} alt="" />
 
       {(item.cost != null || item.damage || item.cd != null || item.accuracy != null) && (
         <div className="stat-row">
