@@ -180,7 +180,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
     <aside className="detail-panel" style={{ '--rarity': `var(--r-${k})` } as React.CSSProperties}>
       <button className="detail-close" onClick={onClose}>×</button>
       <div className="detail-head">
-        <div className="icon-wrap"><ItemIcon item={item} /></div>
+        <div className="icon-wrap"><ItemIcon key={item.gid} item={item} /></div>
         <div>
           <h2 className="detail-name">{item.name}</h2>
           <div className="detail-sub">
@@ -228,7 +228,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
       {item.shape && item.shape.length > 0 && (
         <div className="detail-section">
           <h4>Shape — {item.shape.length}×{Math.max(...item.shape.map(r => r.length))} grid</h4>
-          <ShapeGrid shape={item.shape} />
+          <ShapeGrid shape={item.shape} itemSlug={item.slug} itemImage={item.image} />
           <div style={{ fontSize: '0.75rem', color: 'var(--ink-3)', marginTop: 8 }}>
             Filled cells occupy backpack space.{item.shape.flat().includes(2) ? ' Sockets accept embedded items.' : ''}
           </div>
