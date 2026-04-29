@@ -305,7 +305,8 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = items;
-    if (charF !== 'All') list = list.filter(it => Array.isArray(it.sockets) && it.sockets.includes(charF));
+    if (charF === 'Neutral') list = list.filter(it => !it.sockets?.length);
+    else if (charF !== 'All') list = list.filter(it => Array.isArray(it.sockets) && it.sockets.includes(charF));
     if (focusEffect) list = itemsWithToken(list, focusEffect);
     if (q) list = list.filter(i => i.name.toLowerCase().includes(q) || (i.effect ?? '').toLowerCase().includes(q));
     if (rarityF !== 'All') list = list.filter(i => i.rarity === rarityF);
@@ -331,6 +332,11 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
       </div>
       <div className="filters" style={{ marginBottom: 12 }}>
         <button className={`char-chip${charF === 'All' ? ' active' : ''}`} onClick={() => { setCharF('All'); clearFocus(); }} style={{ paddingLeft: 12 }}>All characters</button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <span className={`char-chip${charF === 'Neutral' ? ' active' : ''}`} onClick={() => setCharF('Neutral')} style={{ '--char-color': '#94a3b8' } as React.CSSProperties}>
+          <span className="av"><img src="/images/chars/NeutralIcon.webp" alt="" /></span>
+          Neutral
+        </span>
         {CHARACTERS.map(c => (
           <span key={c.id} className={`char-chip${charF === c.id ? ' active' : ''}`} onClick={() => setCharF(c.id)} style={{ '--char-color': c.color } as React.CSSProperties}>
             <span className="av">{c.icon ? <img src={c.icon} alt="" /> : c.name[0]}</span>
