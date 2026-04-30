@@ -519,13 +519,18 @@ function CharactersPage({ items, onFilterChar }: { items: Item[]; onFilterChar: 
   );
 }
 
-function EffectsPage({ items, onFilterEffect }: { items: Item[]; onFilterEffect: (e: string) => void }) {
+function EffectsPage({ items, onFilterEffect, onSelectItem }: {
+  items: Item[]; onFilterEffect: (e: string) => void; onSelectItem: (i: Item) => void;
+}) {
   const buffs = Object.entries(EFFECTS).filter(([, v]) => !('alias' in v) && (v as import('@/lib/types').Effect).kind === 'buff') as [string, import('@/lib/types').Effect][];
   const debuffs = Object.entries(EFFECTS).filter(([, v]) => !('alias' in v) && (v as import('@/lib/types').Effect).kind === 'debuff') as [string, import('@/lib/types').Effect][];
 
   function EffectCard({ name, e }: { name: string; e: import('@/lib/types').Effect }) {
-    const sources = itemsWithToken(items, name).slice(0, 5);
-    const total = itemsWithToken(items, name).length;
+    const all = useMemo(() => itemsWithToken(items, name), [items, name]);
+    const total = all.length;
+    const COLLAPSED = 8;
+    const [expanded, setExpanded] = useState(false);
+    const visible = expanded ? all : all.slice(0, COLLAPSED);
     return (
       <div className="effect-card" data-effect={name} style={{ '--effect-color': e.color } as React.CSSProperties}>
         <h3>
@@ -537,14 +542,32 @@ function EffectsPage({ items, onFilterEffect }: { items: Item[]; onFilterEffect:
         <div className="kind">{e.kind === 'buff' ? 'Buff' : 'Debuff'}</div>
         <p style={{ margin: '0 0 10px', fontSize: '0.9rem' }}>{e.short}</p>
         <div className="formula"><strong style={{ color: 'var(--accent)' }}>Effect:</strong> {e.formula}</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--ink-3)', marginBottom: 10 }}>{e.note}</div>
-        {sources.length > 0 && (
-          <div>
-            <div style={{ fontSize: '0.7rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 6 }}>Sources ({total})</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {sources.map(it => <span key={it.gid} className="type-chip" style={{ cursor: 'pointer' }} onClick={() => onFilterEffect(name)}>{it.name}</span>)}
-              {total > 5 && <span className="type-chip" style={{ cursor: 'pointer', background: 'var(--accent-soft)' }} onClick={() => onFilterEffect(name)}>See all →</span>}
+        <div style={{ fontSize: '0.78rem', color: 'var(--ink-3)', marginBottom: 14 }}>{e.note}</div>
+        {total > 0 && (
+          <div className="sources-section">
+            <div className="sources-head">
+              <span>Sources ({total})</span>
+              <button className="sources-filter" onClick={() => onFilterEffect(name)}>Filter items →</button>
             </div>
+            <div className="source-list">
+              {visible.map(it => (
+                <button
+                  key={it.gid}
+                  className="source-item"
+                  onClick={() => onSelectItem(it)}
+                  style={{ '--rarity': `var(--r-${rarityKey(it.rarity)})` } as React.CSSProperties}
+                  title={`${it.name} · ${it.rarity}`}
+                >
+                  <ItemIcon item={it} size={28} />
+                  <span className="source-name">{it.name}</span>
+                </button>
+              ))}
+            </div>
+            {total > COLLAPSED && (
+              <button className="source-more" onClick={() => setExpanded(x => !x)}>
+                {expanded ? 'Show less' : `Show ${total - COLLAPSED} more`}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -712,7 +735,7 @@ export default function App() {
             clearFocus={() => { setFocusCharId(null); setFocusEffect(null); }} />
         )}
         {tab === 'characters' && <CharactersPage items={items} onFilterChar={id => goTab('items', { charId: id })} />}
-        {tab === 'effects' && <EffectsPage items={items} onFilterEffect={e => goTab('items', { effect: e })} />}
+        {tab === 'effects' && <EffectsPage items={items} onFilterEffect={e => goTab('items', { effect: e })} onSelectItem={selectItem} />}
         {tab === 'strategies' && <StrategiesPage items={items} onSelectItem={selectItem} />}
       </main>
       <footer className="foot">
