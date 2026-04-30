@@ -4,8 +4,9 @@ import type { Item } from '@/lib/types';
 import {
   CHARACTERS, EFFECTS, STRATEGIES, TIER, RARITY_ORDER,
   rarityKey, formatDamage, resolveEffect, effectIcon, tokenKind,
-  itemsWithToken, itemsForCharacter,
+  itemsWithToken, itemsForCharacter, itemsByRole,
 } from '@/lib/data';
+import type { EffectRole } from '@/lib/data';
 import ItemIcon from '@/components/ItemIcon';
 import EffectText from '@/components/EffectText';
 import ShapeGrid from '@/components/ShapeGrid';
@@ -529,12 +530,46 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
   const buffs = Object.entries(EFFECTS).filter(([, v]) => !('alias' in v) && (v as import('@/lib/types').Effect).kind === 'buff') as [string, import('@/lib/types').Effect][];
   const debuffs = Object.entries(EFFECTS).filter(([, v]) => !('alias' in v) && (v as import('@/lib/types').Effect).kind === 'debuff') as [string, import('@/lib/types').Effect][];
 
-  function EffectCard({ name, e }: { name: string; e: import('@/lib/types').Effect }) {
-    const all = useMemo(() => itemsWithToken(items, name), [items, name]);
-    const total = all.length;
-    const COLLAPSED = 8;
+  function RoleGroup({ label, list }: { label: string; list: Item[] }) {
     const [expanded, setExpanded] = useState(false);
-    const visible = expanded ? all : all.slice(0, COLLAPSED);
+    const COLLAPSED = 6;
+    if (list.length === 0) return null;
+    const visible = expanded ? list : list.slice(0, COLLAPSED);
+    return (
+      <div className="role-group">
+        <div className="role-label">{label} <span className="role-count">{list.length}</span></div>
+        <div className="source-list">
+          {visible.map(it => (
+            <button
+              key={it.gid}
+              className="source-item"
+              onClick={() => onSelectItem(it)}
+              style={{ '--rarity': `var(--r-${rarityKey(it.rarity)})` } as React.CSSProperties}
+              title={`${it.name} · ${it.rarity}`}
+            >
+              <ItemIcon item={it} size={28} />
+              <span className="source-name">{it.name}</span>
+            </button>
+          ))}
+        </div>
+        {list.length > COLLAPSED && (
+          <button className="source-more" onClick={() => setExpanded(x => !x)}>
+            {expanded ? 'Show less' : `Show ${list.length - COLLAPSED} more`}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const ROLE_LABELS: Record<EffectRole, string> = {
+    generates: 'Generates',
+    consumes: 'Consumes',
+    scales: 'Scales with',
+  };
+
+  function EffectCard({ name, e }: { name: string; e: import('@/lib/types').Effect }) {
+    const byRole = useMemo(() => itemsByRole(items, name), [items, name]);
+    const total = byRole.generates.length + byRole.consumes.length + byRole.scales.length;
     return (
       <div className="effect-card" data-effect={name} style={{ '--effect-color': e.color } as React.CSSProperties}>
         <h3>
@@ -550,28 +585,12 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
         {total > 0 && (
           <div className="sources-section">
             <div className="sources-head">
-              <span>Sources ({total})</span>
-              <button className="sources-filter" onClick={() => onFilterEffect(name)}>Filter items →</button>
+              <span>Items</span>
+              <button className="sources-filter" onClick={() => onFilterEffect(name)}>Filter all →</button>
             </div>
-            <div className="source-list">
-              {visible.map(it => (
-                <button
-                  key={it.gid}
-                  className="source-item"
-                  onClick={() => onSelectItem(it)}
-                  style={{ '--rarity': `var(--r-${rarityKey(it.rarity)})` } as React.CSSProperties}
-                  title={`${it.name} · ${it.rarity}`}
-                >
-                  <ItemIcon item={it} size={28} />
-                  <span className="source-name">{it.name}</span>
-                </button>
-              ))}
-            </div>
-            {total > COLLAPSED && (
-              <button className="source-more" onClick={() => setExpanded(x => !x)}>
-                {expanded ? 'Show less' : `Show ${total - COLLAPSED} more`}
-              </button>
-            )}
+            {(['generates', 'consumes', 'scales'] as EffectRole[]).map(role => (
+              <RoleGroup key={role} label={ROLE_LABELS[role]} list={byRole[role]} />
+            ))}
           </div>
         )}
       </div>

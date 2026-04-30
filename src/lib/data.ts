@@ -200,6 +200,68 @@ export function itemsWithToken(items: import('./types').Item[], token: string) {
   return items.filter(it => it.effect && re.test(it.effect));
 }
 
+export type EffectRole = 'generates' | 'consumes' | 'scales';
+
+// Classify how an item interacts with a buff/debuff by inspecting the immediate
+// context preceding each <Token> occurrence in its effect text. An item can
+// belong to multiple roles (e.g. Fancy Fencing Rapier both consumes and generates Luck).
+export function classifyItemEffect(text: string, effectName: string): EffectRole[] {
+  if (!text) return [];
+  const aliases = [effectName];
+  if (effectName === 'Vampirism') aliases.push('Vampiric');
+  if (effectName === 'Vampiric') aliases.push('Vampirism');
+  const tokenAlt = aliases.join('|');
+  const tokenRe = new RegExp(`<(?:${tokenAlt})>`, 'g');
+  const roles = new Set<EffectRole>();
+
+  // Window sizes for "looking back" before a token occurrence
+  const SCALE_LOOKBACK = 30;   // "for each ", "per ", "at least N "
+  const VERB_LOOKBACK = 40;    // "Gain N ", "Inflict N ", "Use N "
+
+  let m: RegExpExecArray | null;
+  while ((m = tokenRe.exec(text)) !== null) {
+    const before = text.slice(Math.max(0, m.index - VERB_LOOKBACK), m.index);
+    const tail = before.slice(-SCALE_LOOKBACK);
+
+    // Scaling: "for each X", "per X", "at least N X" — checked first because
+    // these patterns can contain a "gain" that's not actually generating the effect.
+    if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
+        /\bat least\s+\S+\s*$/i.test(tail)) {
+      roles.add('scales');
+      continue;
+    }
+
+    // Consumes: "Use N X" / "use N X" within 40 chars before the token,
+    // not preceded by "for each" / "per" (already excluded above).
+    if (/\b(?:Use|use)\b[^<>]{0,40}$/.test(before)) {
+      roles.add('consumes');
+      continue;
+    }
+
+    // Generates: "Gain N X" / "Inflict N X" within 40 chars before the token.
+    if (/\b(?:Gain|Inflict|gain|inflict)\b[^<>]{0,40}$/.test(before)) {
+      roles.add('generates');
+      continue;
+    }
+
+    // Default: item references the effect without a clear verb pattern
+    // (e.g. "Remove N <X> from your opponent", "<X> reached:", threshold triggers).
+    // Treat as scales/affected-by — better than dropping it entirely.
+    roles.add('scales');
+  }
+
+  return Array.from(roles);
+}
+
+export function itemsByRole(items: import('./types').Item[], effectName: string): Record<EffectRole, import('./types').Item[]> {
+  const result: Record<EffectRole, import('./types').Item[]> = { generates: [], consumes: [], scales: [] };
+  for (const it of itemsWithToken(items, effectName)) {
+    const roles = classifyItemEffect(it.effect ?? '', effectName);
+    for (const r of roles) result[r].push(it);
+  }
+  return result;
+}
+
 export function itemsForCharacter(items: import('./types').Item[], charId: string) {
   return items.filter(it => Array.isArray(it.sockets) && it.sockets.includes(charId));
 }
