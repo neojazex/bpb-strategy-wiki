@@ -584,12 +584,24 @@ export default function App() {
   const [focusEffect, setFocusEffect] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bpb_theme') ?? 'light';
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const saved = localStorage.getItem('bpb_theme') ?? (systemDark ? 'dark' : 'light');
     setTheme(saved);
     document.documentElement.setAttribute('data-theme', saved);
     const savedFont = localStorage.getItem('bpb_font') ?? 'game';
     setGameFont(savedFont === 'game');
     document.documentElement.setAttribute('data-font', savedFont);
+    // Follow system preference changes only if user hasn't manually set a preference
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('bpb_theme')) {
+        const next = e.matches ? 'dark' : 'light';
+        setTheme(next);
+        document.documentElement.setAttribute('data-theme', next);
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   useEffect(() => {

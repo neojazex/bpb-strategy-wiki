@@ -150,6 +150,18 @@ const ELEMENT_ICONS: Record<string, string> = {
   Star:     '/images/icons/Star.webp',
   Diamond:  '/images/icons/SecondaryStar_icon.webp',
   Treasure: '/images/icons/Icon_Treasure.webp',
+  Effect:   '/images/icons/Icon_Effect.webp',
+  Melee:    '/images/icons/Icon_Melee.webp',
+  Ranged:   '/images/icons/Icon_Ranged.webp',
+  Holy:     '/images/icons/Icon_Holy.webp',
+  Magic:    '/images/icons/Icon_Magic.webp',
+  Nature:   '/images/icons/Icon_Nature.webp',
+  Dark:     '/images/icons/Icon_Dark.webp',
+  Fire:     '/images/icons/Icon_Fire.webp',
+  Ice:      '/images/icons/Icon_Ice.webp',
+  Lightning:'/images/icons/Icon_Lightning.webp',
+  Musical:  '/images/icons/Icon_Musical.webp',
+  Vampiric: '/images/icons/Icon_Vampiric.webp',
 };
 
 export function effectIcon(name: string): string | null {
