@@ -34,9 +34,6 @@ export const EFFECTS: Record<string, EffectEntry> = {
   Cold: { kind: 'debuff', color: '#3a6a8a', icon: '/images/icons/Icon_Cold.webp',
     short: 'Slows attack speed.', formula: '−2% attack speed per stack.',
     note: 'Eventually upgrades to Freeze in some chains.' },
-  Weaken: { kind: 'debuff', color: '#6b5a3a', icon: '/images/icons/Icon_Weaken.webp',
-    short: 'Reduces damage dealt.', formula: 'Reduces outgoing damage while stacks persist.',
-    note: 'Applied by various debuff items.' },
   Vampiric: { alias: 'Vampirism' },
 };
 
