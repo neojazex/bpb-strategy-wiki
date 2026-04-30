@@ -227,13 +227,18 @@ button { font-family: inherit; cursor: pointer; }
 .effect-text .tk-h { color: var(--ink); font-weight: 600; background: var(--accent-soft); padding: 0 4px; border-radius: 3px; }
 .effect-text .tk-m { color: var(--ink-3); font-style: italic; }
 .effect-text .tk-red { color: var(--debuff); font-weight: 600; }
-.effect-text .tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 4px; background: var(--bg-soft); border: 1px solid var(--rule); border-radius: 4px; font-size: 0.82rem; font-weight: 500; margin: 0 1px; cursor: pointer; transition: border-color 0.1s; }
-.effect-text .tag:hover { border-color: var(--rule-2); }
-.effect-text .tag img { width: 14px; height: 14px; object-fit: contain; }
-.effect-text .tag.buff { color: var(--buff); border-color: rgba(5,150,105,0.25); background: rgba(5,150,105,0.06); }
-.effect-text .tag.debuff { color: var(--debuff); border-color: rgba(220,38,38,0.25); background: rgba(220,38,38,0.06); }
-.effect-text .tag.elem { color: var(--ink-2); }
-.effect-text .tag.no-icon { padding: 1px 7px; }
+.tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 4px; background: var(--bg-soft); border: 1px solid var(--rule); border-radius: 4px; font-size: 0.82rem; font-weight: 500; margin: 0 1px; vertical-align: middle; transition: border-color 0.1s; }
+.tag:hover { border-color: var(--rule-2); }
+.tag img { width: 14px; height: 14px; object-fit: contain; flex-shrink: 0; }
+.tag.buff { color: var(--buff); border-color: rgba(5,150,105,0.25); background: rgba(5,150,105,0.06); }
+.tag.debuff { color: var(--debuff); border-color: rgba(220,38,38,0.25); background: rgba(220,38,38,0.06); }
+.tag.elem { color: var(--ink-2); }
+.tag.no-icon { padding: 1px 7px; }
+.detail-panel.has-frame .tag { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.9); }
+.detail-panel.has-frame .tag.buff { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.4); color: #6ee7b7; }
+.detail-panel.has-frame .tag.debuff { background: rgba(220,38,38,0.2); border-color: rgba(220,38,38,0.4); color: #fca5a5; }
+.detail-sticky-head { position: sticky; top: 0; z-index: 2; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); margin: 0 -8px; padding: 8px 8px 0; }
+.detail-sticky-head .detail-head { margin-bottom: 8px; }
 .gold-inline { display: inline-flex; align-items: center; gap: 3px; vertical-align: -2px; }
 .gold-inline img { width: 13px; height: 13px; }
 

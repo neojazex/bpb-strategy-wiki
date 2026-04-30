@@ -186,8 +186,9 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
   return (
     <aside className="detail-panel has-frame" style={{ '--rarity': `var(--r-${k})`, '--frame-url': `url('/images/tooltip/TooltipBase_${item.rarity}.webp')` } as React.CSSProperties}>
       <div className="detail-scroll">
-      <button className="detail-close" onClick={onClose}>×</button>
-      <div className="detail-head">
+      <div className="detail-sticky-head">
+        <button className="detail-close" onClick={onClose}>×</button>
+        <div className="detail-head">
         <div className="icon-wrap"><ItemIcon key={item.gid} item={item} /></div>
         <div>
           <h2 className="detail-name">{item.name}</h2>
@@ -219,9 +220,10 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
             </div>
           )}
         </div>
-      </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="tooltip-divider" src={dividerSrc} alt="" />
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="tooltip-divider" src={dividerSrc} alt="" />
+      </div>{/* end detail-sticky-head */}
 
       {(item.cost != null || item.damage || item.cd != null || item.accuracy != null) && (
         <div className="stat-row">
@@ -255,7 +257,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {tokensMentioned.map(t => {
               const resolved = resolveEffect(t);
-              const icon = resolved ? effectIcon(t) : null;
+              const icon = effectIcon(t);
               const kind = tokenKind(t);
               if (t === 'Gold') return (
                 <span key={t} className="tag elem no-icon">
