@@ -200,11 +200,15 @@ export function itemsWithToken(items: import('./types').Item[], token: string) {
   return items.filter(it => it.effect && re.test(it.effect));
 }
 
-export type EffectRole = 'generates' | 'consumes' | 'scales';
+export type EffectRole = 'generates' | 'consumes' | 'removes' | 'scales';
 
 // Classify how an item interacts with a buff/debuff by inspecting the immediate
 // context preceding each <Token> occurrence in its effect text. An item can
 // belong to multiple roles (e.g. Fancy Fencing Rapier both consumes and generates Luck).
+//
+// Verb gaps allow intervening <Tokens> (so "Use 7 <Block>, 7 <Luck>" tags both as
+// consumed) but exclude clause separators (".", ";") to avoid bleeding across
+// independent effects.
 export function classifyItemEffect(text: string, effectName: string): EffectRole[] {
   if (!text) return [];
   const aliases = [effectName];
@@ -216,7 +220,7 @@ export function classifyItemEffect(text: string, effectName: string): EffectRole
 
   // Window sizes for "looking back" before a token occurrence
   const SCALE_LOOKBACK = 30;   // "for each ", "per ", "at least N "
-  const VERB_LOOKBACK = 40;    // "Gain N ", "Inflict N ", "Use N "
+  const VERB_LOOKBACK = 50;    // "Gain N ", "Inflict N ", "Use N ", "Remove N "
 
   let m: RegExpExecArray | null;
   while ((m = tokenRe.exec(text)) !== null) {
@@ -231,22 +235,31 @@ export function classifyItemEffect(text: string, effectName: string): EffectRole
       continue;
     }
 
-    // Consumes: "Use N X" / "use N X" within 40 chars before the token,
-    // not preceded by "for each" / "per" (already excluded above).
-    if (/\b(?:Use|use)\b[^<>]{0,40}$/.test(before)) {
-      roles.add('consumes');
+    // Removes: "Remove N <X>" / "Steal N <X>" — buff stripping from opponent.
+    if (/\b(?:Remove|Steal|remove|steal)\b[^.;]{0,50}$/.test(before)) {
+      roles.add('removes');
       continue;
     }
 
-    // Generates: "Gain N X" / "Inflict N X" within 40 chars before the token.
-    if (/\b(?:Gain|Inflict|gain|inflict)\b[^<>]{0,40}$/.test(before)) {
+    // Generates: "Gain N <X>" / "Inflict N <X>". Checked BEFORE consumes so
+    // that "Use 1 <Mana> to gain 3 <Heat>" tags Heat as generates (the closer,
+    // unblocked verb to <Heat> is "gain"). Compound consumes still work
+    // because periods between clauses block earlier "Gain" verbs from
+    // matching across into the consume clause.
+    if (/\b(?:Gain|Inflict|gain|inflict)\b[^.;]{0,50}$/.test(before)) {
       roles.add('generates');
       continue;
     }
 
+    // Consumes: "Use N <X>" / "use N <X>". Allows compound forms like
+    // "Use 7 <Block>, 7 <Luck>" by permitting intervening <Tokens>.
+    if (/\b(?:Use|use)\b[^.;]{0,50}$/.test(before)) {
+      roles.add('consumes');
+      continue;
+    }
+
     // Default: item references the effect without a clear verb pattern
-    // (e.g. "Remove N <X> from your opponent", "<X> reached:", threshold triggers).
-    // Treat as scales/affected-by — better than dropping it entirely.
+    // (e.g. "<X> reached:" thresholds, "While you have <X>"). Treat as scales.
     roles.add('scales');
   }
 
@@ -254,12 +267,32 @@ export function classifyItemEffect(text: string, effectName: string): EffectRole
 }
 
 export function itemsByRole(items: import('./types').Item[], effectName: string): Record<EffectRole, import('./types').Item[]> {
-  const result: Record<EffectRole, import('./types').Item[]> = { generates: [], consumes: [], scales: [] };
+  const result: Record<EffectRole, import('./types').Item[]> = { generates: [], consumes: [], removes: [], scales: [] };
   for (const it of itemsWithToken(items, effectName)) {
     const roles = classifyItemEffect(it.effect ?? '', effectName);
     for (const r of roles) result[r].push(it);
   }
   return result;
+}
+
+// For an item, list each known buff/debuff it touches and what roles it plays.
+// Used in the detail panel for an at-a-glance interaction summary.
+export function effectRolesForItem(item: import('./types').Item): { effect: string; roles: EffectRole[] }[] {
+  const text = item.effect;
+  if (!text) return [];
+  const seen = new Set<string>();
+  const re = /<([A-Z][a-zA-Z]+)>/g;
+  let m: RegExpExecArray | null;
+  const out: { effect: string; roles: EffectRole[] }[] = [];
+  while ((m = re.exec(text)) !== null) {
+    const tok = m[1];
+    const resolved = resolveEffect(tok);
+    if (!resolved || seen.has(resolved)) continue;
+    seen.add(resolved);
+    const roles = classifyItemEffect(text, resolved);
+    if (roles.length > 0) out.push({ effect: resolved, roles });
+  }
+  return out;
 }
 
 export function itemsForCharacter(items: import('./types').Item[], charId: string) {

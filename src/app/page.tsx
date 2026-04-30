@@ -4,7 +4,7 @@ import type { Item } from '@/lib/types';
 import {
   CHARACTERS, EFFECTS, STRATEGIES, TIER, RARITY_ORDER,
   rarityKey, formatDamage, resolveEffect, effectIcon, tokenKind,
-  itemsWithToken, itemsForCharacter, itemsByRole,
+  itemsWithToken, itemsForCharacter, itemsByRole, effectRolesForItem,
 } from '@/lib/data';
 import type { EffectRole } from '@/lib/data';
 import ItemIcon from '@/components/ItemIcon';
@@ -282,31 +282,69 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
         </div>
       )}
 
-      {tokensMentioned.length > 0 && (
-        <div className="detail-section">
-          <h4>References</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {tokensMentioned.map(t => {
-              const resolved = resolveEffect(t);
-              const icon = effectIcon(t);
-              const kind = tokenKind(t);
-              if (t === 'Gold') return (
-                <span key={t} className="tag elem no-icon">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/ui/GoldCoin.png" alt="" />Gold
-                </span>
-              );
-              return (
-                <span key={t} className={`tag ${kind}${!icon ? ' no-icon' : ''}`}
-                  style={{ cursor: resolved ? 'pointer' : 'default' }}
-                  onClick={() => resolved && onNavigateEffect(resolved)}>
-                  {icon && <img src={icon} alt="" />}{t}
-                </span>
-              );
-            })}
+      {(() => {
+        const interactions = effectRolesForItem(item);
+        if (interactions.length === 0) return null;
+        const ROLE_SHORT: Record<EffectRole, string> = {
+          generates: 'Generates', consumes: 'Consumes', removes: 'Removes', scales: 'Scales with',
+        };
+        return (
+          <div className="detail-section">
+            <h4>Interactions</h4>
+            <div className="interactions-list">
+              {interactions.map(({ effect, roles }) => {
+                const icon = effectIcon(effect);
+                const kind = tokenKind(effect);
+                return (
+                  <div key={effect} className="interaction-row">
+                    <span className={`tag ${kind}${!icon ? ' no-icon' : ''}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onNavigateEffect(effect)}>
+                      {icon && <img src={icon} alt="" />}{effect}
+                    </span>
+                    <div className="interaction-roles">
+                      {roles.map(r => <span key={r} className={`role-badge role-${r}`}>{ROLE_SHORT[r]}</span>)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {tokensMentioned.length > 0 && (() => {
+        // References section: only show tokens that didn't make it into Interactions
+        // (i.e. element/type tokens like Star, Diamond, Treasure, plus Gold).
+        const interactionEffects = new Set(effectRolesForItem(item).map(x => x.effect));
+        const others = tokensMentioned.filter(t => !interactionEffects.has(resolveEffect(t) ?? ''));
+        if (others.length === 0) return null;
+        return (
+          <div className="detail-section">
+            <h4>References</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {others.map(t => {
+                const resolved = resolveEffect(t);
+                const icon = effectIcon(t);
+                const kind = tokenKind(t);
+                if (t === 'Gold') return (
+                  <span key={t} className="tag elem no-icon">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/ui/GoldCoin.png" alt="" />Gold
+                  </span>
+                );
+                return (
+                  <span key={t} className={`tag ${kind}${!icon ? ' no-icon' : ''}`}
+                    style={{ cursor: resolved ? 'pointer' : 'default' }}
+                    onClick={() => resolved && onNavigateEffect(resolved)}>
+                    {icon && <img src={icon} alt="" />}{t}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       <ConnectionsPanel item={item} allItems={allItems} onSelectItem={onSelectItem} onNavigateEffect={onNavigateEffect} />
       <CommentsPanel itemSlug={item.slug} />
@@ -564,12 +602,13 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
   const ROLE_LABELS: Record<EffectRole, string> = {
     generates: 'Generates',
     consumes: 'Consumes',
+    removes: 'Removes',
     scales: 'Scales with',
   };
 
   function EffectCard({ name, e }: { name: string; e: import('@/lib/types').Effect }) {
     const byRole = useMemo(() => itemsByRole(items, name), [items, name]);
-    const total = byRole.generates.length + byRole.consumes.length + byRole.scales.length;
+    const total = byRole.generates.length + byRole.consumes.length + byRole.removes.length + byRole.scales.length;
     return (
       <div className="effect-card" data-effect={name} style={{ '--effect-color': e.color } as React.CSSProperties}>
         <h3>
@@ -588,7 +627,7 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
               <span>Items</span>
               <button className="sources-filter" onClick={() => onFilterEffect(name)}>Filter all →</button>
             </div>
-            {(['generates', 'consumes', 'scales'] as EffectRole[]).map(role => (
+            {(['generates', 'consumes', 'removes', 'scales'] as EffectRole[]).map(role => (
               <RoleGroup key={role} label={ROLE_LABELS[role]} list={byRole[role]} />
             ))}
           </div>
