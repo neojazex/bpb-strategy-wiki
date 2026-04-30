@@ -28,7 +28,10 @@ function readUrlState(): { tab?: Tab; item?: string; char?: string; effect?: str
   };
 }
 
-function writeUrlState(s: { tab: Tab; item?: string | null; char?: string | null; effect?: string | null }) {
+function writeUrlState(
+  s: { tab: Tab; item?: string | null; char?: string | null; effect?: string | null },
+  method: 'push' | 'replace' = 'push',
+) {
   if (typeof window === 'undefined') return;
   const p = new URLSearchParams();
   if (s.tab && s.tab !== 'home') p.set('tab', s.tab);
@@ -37,7 +40,8 @@ function writeUrlState(s: { tab: Tab; item?: string | null; char?: string | null
   if (s.effect) p.set('effect', s.effect);
   const qs = p.toString();
   const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-  window.history.replaceState(null, '', url);
+  if (method === 'push') window.history.pushState(null, '', url);
+  else window.history.replaceState(null, '', url);
 }
 
 function Topbar({ tab, onTab, theme, onToggleTheme, gameFont, onToggleFont }: {
@@ -632,6 +636,7 @@ export default function App() {
   const [focusCharId, setFocusCharId] = useState<string | null>(() => readUrlState().char ?? null);
   const [focusEffect, setFocusEffect] = useState<string | null>(() => readUrlState().effect ?? null);
   const hydratedRef = useRef(false);
+  const skipPushRef = useRef(false);
 
   useEffect(() => {
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -669,11 +674,49 @@ export default function App() {
     hydratedRef.current = true;
   }, [items]);
 
-  // Sync state to URL after hydration
+  // Sync state → URL with pushState so back/forward cycle through nav actions.
+  // Dedup against current URL so hydration doesn't add a spurious entry.
   useEffect(() => {
     if (!hydratedRef.current) return;
-    writeUrlState({ tab, item: selected?.slug, char: focusCharId, effect: focusEffect });
+    if (skipPushRef.current) {
+      // popstate just updated state from URL — don't push back
+      skipPushRef.current = false;
+      return;
+    }
+    const cur = readUrlState();
+    const wantItem = selected?.slug;
+    const wantChar = focusCharId ?? undefined;
+    const wantEffect = focusEffect ?? undefined;
+    if (
+      (cur.tab ?? 'home') === tab &&
+      cur.item === wantItem &&
+      cur.char === wantChar &&
+      cur.effect === wantEffect
+    ) {
+      return; // URL already matches; nothing to push
+    }
+    writeUrlState({ tab, item: wantItem, char: focusCharId, effect: focusEffect }, 'push');
   }, [tab, selected, focusCharId, focusEffect]);
+
+  // Browser back/forward → re-derive state from URL
+  useEffect(() => {
+    if (!items) return;
+    const handler = () => {
+      skipPushRef.current = true;
+      const u = readUrlState();
+      setTab(u.tab ?? 'home');
+      if (u.item) {
+        const it = items.find(i => i.slug === u.item);
+        setSelected(it ?? null);
+      } else {
+        setSelected(null);
+      }
+      setFocusCharId(u.char ?? null);
+      setFocusEffect(u.effect ?? null);
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [items]);
 
   const toggleTheme = useCallback(() => {
     const next = theme === 'light' ? 'dark' : 'light';
