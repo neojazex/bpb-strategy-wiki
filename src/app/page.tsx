@@ -13,6 +13,32 @@ import ConnectionsPanel from '@/components/ConnectionsPanel';
 import CommentsPanel from '@/components/CommentsPanel';
 
 type Tab = 'home' | 'items' | 'characters' | 'effects' | 'strategies';
+const TABS: Tab[] = ['home', 'items', 'characters', 'effects', 'strategies'];
+
+// --- URL state sync (deep links) ---
+function readUrlState(): { tab?: Tab; item?: string; char?: string; effect?: string } {
+  if (typeof window === 'undefined') return {};
+  const p = new URLSearchParams(window.location.search);
+  const tab = p.get('tab');
+  return {
+    tab: tab && (TABS as string[]).includes(tab) ? (tab as Tab) : undefined,
+    item: p.get('item') ?? undefined,
+    char: p.get('char') ?? undefined,
+    effect: p.get('effect') ?? undefined,
+  };
+}
+
+function writeUrlState(s: { tab: Tab; item?: string | null; char?: string | null; effect?: string | null }) {
+  if (typeof window === 'undefined') return;
+  const p = new URLSearchParams();
+  if (s.tab && s.tab !== 'home') p.set('tab', s.tab);
+  if (s.item) p.set('item', s.item);
+  if (s.char) p.set('char', s.char);
+  if (s.effect) p.set('effect', s.effect);
+  const qs = p.toString();
+  const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  window.history.replaceState(null, '', url);
+}
 
 function Topbar({ tab, onTab, theme, onToggleTheme, gameFont, onToggleFont }: {
   tab: Tab; onTab: (t: Tab) => void; theme: string; onToggleTheme: () => void;
@@ -576,12 +602,13 @@ function StrategiesPage({ items, onSelectItem }: { items: Item[]; onSelectItem: 
 
 export default function App() {
   const [items, setItems] = useState<Item[] | null>(null);
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useState<Tab>(() => readUrlState().tab ?? 'home');
   const [selected, setSelected] = useState<Item | null>(null);
   const [theme, setTheme] = useState('light');
   const [gameFont, setGameFont] = useState(true);
-  const [focusCharId, setFocusCharId] = useState<string | null>(null);
-  const [focusEffect, setFocusEffect] = useState<string | null>(null);
+  const [focusCharId, setFocusCharId] = useState<string | null>(() => readUrlState().char ?? null);
+  const [focusEffect, setFocusEffect] = useState<string | null>(() => readUrlState().effect ?? null);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -607,6 +634,23 @@ export default function App() {
   useEffect(() => {
     fetch('/items.json').then(r => r.json()).then(setItems);
   }, []);
+
+  // Hydrate `selected` from URL once items are available
+  useEffect(() => {
+    if (!items || hydratedRef.current) return;
+    const slug = readUrlState().item;
+    if (slug) {
+      const it = items.find(i => i.slug === slug);
+      if (it) setSelected(it);
+    }
+    hydratedRef.current = true;
+  }, [items]);
+
+  // Sync state to URL after hydration
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    writeUrlState({ tab, item: selected?.slug, char: focusCharId, effect: focusEffect });
+  }, [tab, selected, focusCharId, focusEffect]);
 
   const toggleTheme = useCallback(() => {
     const next = theme === 'light' ? 'dark' : 'light';
