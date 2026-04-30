@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Item } from '@/lib/types';
 import {
   CHARACTERS, EFFECTS, STRATEGIES, TIER, RARITY_ORDER,
@@ -307,14 +307,25 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
 }) {
   const [query, setQuery] = useState('');
   const [rarityF, setRarityF] = useState('All');
-  const [typeF, setTypeF] = useState('All');
+  const [typeFs, setTypeFs] = useState<string[]>([]);
+  const [typeDropOpen, setTypeDropOpen] = useState(false);
+  const typeDropRef = useRef<HTMLDivElement>(null);
   const [charF, setCharF] = useState('All');
   const [page, setPage] = useState(1);
 
   useEffect(() => { if (focusCharId) setCharF(focusCharId); }, [focusCharId]);
-  useEffect(() => { setPage(1); }, [query, rarityF, typeF, charF, focusEffect]);
+  useEffect(() => { setPage(1); }, [query, rarityF, typeFs, charF, focusEffect]);
 
-  const types = useMemo(() => ['All', ...Array.from(new Set(items.map(i => i.type))).sort()], [items]);
+  useEffect(() => {
+    if (!typeDropOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!typeDropRef.current?.contains(e.target as Node)) setTypeDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [typeDropOpen]);
+
+  const types = useMemo(() => Array.from(new Set(items.map(i => i.type))).sort(), [items]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -324,7 +335,7 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
     if (focusEffect) list = itemsWithToken(list, focusEffect);
     if (q) list = list.filter(i => i.name.toLowerCase().includes(q) || (i.effect ?? '').toLowerCase().includes(q));
     if (rarityF !== 'All') list = list.filter(i => i.rarity === rarityF);
-    if (typeF !== 'All') list = list.filter(i => i.type === typeF);
+    if (typeFs.length > 0) list = list.filter(i => typeFs.includes(i.type));
     const rarityOrd = Object.fromEntries(RARITY_ORDER.map((r, i) => [r, i]));
     // Neutral (no sockets) = 0, then classes in CHARACTERS order (1-based), unknown = 99
     const classOrd: Record<string, number> = { Neutral: 0 };
@@ -335,7 +346,7 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
       classKey(a) - classKey(b) ||
       a.name.localeCompare(b.name)
     );
-  }, [items, query, rarityF, typeF, charF, focusEffect]);
+  }, [items, query, rarityF, typeFs, charF, focusEffect]);
 
   const PAGE_SIZE = 48;
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -380,10 +391,27 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
           );
         })}
       </div>
-      <div className="filters">
-        {types.slice(0, 14).map(t => (
-          <button key={t} className={`filter-chip${typeF === t ? ' active' : ''}`} onClick={() => setTypeF(t)}>{t}</button>
-        ))}
+      <div className="filters type-filter-row" ref={typeDropRef}>
+        <button
+          className={`filter-chip type-drop-btn${typeFs.length > 0 ? ' active' : ''}`}
+          onClick={() => setTypeDropOpen(o => !o)}
+        >
+          {typeFs.length === 0 ? 'All types' : typeFs.length === 1 ? typeFs[0] : `${typeFs.length} types`}
+          <span className="drop-caret">{typeDropOpen ? '▲' : '▼'}</span>
+        </button>
+        {typeDropOpen && (
+          <div className="type-dropdown">
+            <button className={`type-drop-item${typeFs.length === 0 ? ' checked' : ''}`} onClick={() => setTypeFs([])}>
+              <span className="drop-check" />All types
+            </button>
+            {types.map(t => (
+              <button key={t} className={`type-drop-item${typeFs.includes(t) ? ' checked' : ''}`}
+                onClick={() => setTypeFs(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>
+                <span className="drop-check" />{t}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className={`items-layout${selected ? ' with-detail' : ''}`}>
         <div className="items-grid">
