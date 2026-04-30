@@ -306,15 +306,18 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
   focusCharId: string | null; focusEffect: string | null; clearFocus: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [rarityF, setRarityF] = useState('All');
+  const [rarityFs, setRarityFs] = useState<string[]>([]);
   const [typeFs, setTypeFs] = useState<string[]>([]);
   const [typeDropOpen, setTypeDropOpen] = useState(false);
   const typeDropRef = useRef<HTMLDivElement>(null);
-  const [charF, setCharF] = useState('All');
+  const [charFs, setCharFs] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 
-  useEffect(() => { if (focusCharId) setCharF(focusCharId); }, [focusCharId]);
-  useEffect(() => { setPage(1); }, [query, rarityF, typeFs, charF, focusEffect]);
+  const toggleArr = (arr: string[], val: string): string[] =>
+    arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+
+  useEffect(() => { if (focusCharId) setCharFs([focusCharId]); }, [focusCharId]);
+  useEffect(() => { setPage(1); }, [query, rarityFs, typeFs, charFs, focusEffect]);
 
   useEffect(() => {
     if (!typeDropOpen) return;
@@ -330,11 +333,14 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = items;
-    if (charF === 'Neutral') list = list.filter(it => !it.sockets?.length);
-    else if (charF !== 'All') list = list.filter(it => Array.isArray(it.sockets) && it.sockets.includes(charF));
+    if (charFs.length > 0) {
+      list = list.filter(it => charFs.some(c =>
+        c === 'Neutral' ? !it.sockets?.length : Array.isArray(it.sockets) && it.sockets.includes(c)
+      ));
+    }
     if (focusEffect) list = itemsWithToken(list, focusEffect);
     if (q) list = list.filter(i => i.name.toLowerCase().includes(q) || (i.effect ?? '').toLowerCase().includes(q));
-    if (rarityF !== 'All') list = list.filter(i => i.rarity === rarityF);
+    if (rarityFs.length > 0) list = list.filter(i => rarityFs.includes(i.rarity));
     if (typeFs.length > 0) list = list.filter(i => typeFs.includes(i.type));
     const rarityOrd = Object.fromEntries(RARITY_ORDER.map((r, i) => [r, i]));
     // Neutral (no sockets) = 0, then classes in CHARACTERS order (1-based), unknown = 99
@@ -346,7 +352,7 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
       classKey(a) - classKey(b) ||
       a.name.localeCompare(b.name)
     );
-  }, [items, query, rarityF, typeFs, charF, focusEffect]);
+  }, [items, query, rarityFs, typeFs, charFs, focusEffect]);
 
   const PAGE_SIZE = 48;
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -368,25 +374,24 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
         <div className="count-pill">{filtered.length} / {items.length}</div>
       </div>
       <div className="filters" style={{ marginBottom: 12 }}>
-        <button className={`char-chip${charF === 'All' ? ' active' : ''}`} onClick={() => { setCharF('All'); clearFocus(); }} style={{ paddingLeft: 12 }}>All characters</button>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <span className={`char-chip${charF === 'Neutral' ? ' active' : ''}`} onClick={() => setCharF('Neutral')} style={{ '--char-color': '#94a3b8' } as React.CSSProperties}>
+        <span className={`char-chip${charFs.includes('Neutral') ? ' active' : ''}`} onClick={() => setCharFs(prev => toggleArr(prev, 'Neutral'))} style={{ '--char-color': '#94a3b8' } as React.CSSProperties}>
           <span className="av"><img src="/images/chars/NeutralIcon.webp" alt="" /></span>
           Neutral
         </span>
         {CHARACTERS.map(c => (
-          <span key={c.id} className={`char-chip${charF === c.id ? ' active' : ''}`} onClick={() => setCharF(c.id)} style={{ '--char-color': c.color } as React.CSSProperties}>
+          <span key={c.id} className={`char-chip${charFs.includes(c.id) ? ' active' : ''}`} onClick={() => setCharFs(prev => toggleArr(prev, c.id))} style={{ '--char-color': c.color } as React.CSSProperties}>
             <span className="av">{c.icon ? <img src={c.icon} alt="" /> : c.name[0]}</span>
             {c.name}
           </span>
         ))}
       </div>
       <div className="filters">
-        {['All', ...RARITY_ORDER].map(r => {
-          const k = r === 'All' ? null : rarityKey(r);
+        {RARITY_ORDER.map(r => {
+          const k = rarityKey(r);
           return (
-            <button key={r} className={`filter-chip${rarityF === r ? ' active' : ''}`} onClick={() => setRarityF(r)}>
-              {k && <span className="swatch" style={{ background: `var(--r-${k})` }} />}{r}
+            <button key={r} className={`filter-chip${rarityFs.includes(r) ? ' active' : ''}`} onClick={() => setRarityFs(prev => toggleArr(prev, r))}>
+              <span className="swatch" style={{ background: `var(--r-${k})` }} />{r}
             </button>
           );
         })}
