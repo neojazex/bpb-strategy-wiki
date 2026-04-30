@@ -174,9 +174,9 @@ button { font-family: inherit; cursor: pointer; }
 .empty { grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: var(--ink-3); font-size: 0.9rem; }
 
 .detail-panel { position: sticky; top: 96px; background: var(--bg-card); border: 1px solid var(--rule); border-radius: 12px; padding: 24px; box-shadow: var(--shadow-lg); border-top: 3px solid var(--rarity, var(--accent)); max-height: calc(100vh - 120px); overflow-y: auto; }
-.detail-panel.has-frame { background: transparent; border: none; border-radius: 0; box-shadow: none; border-top: none; padding: 82px 35px 98px; overflow: visible; }
+.detail-panel.has-frame { background: transparent; border: none; border-radius: 0; box-shadow: none; border-top: none; padding: 82px 35px 98px; overflow: visible; display: flex; flex-direction: column; max-height: calc(100vh - 140px); }
 .detail-panel.has-frame::before { content: ''; position: absolute; inset: 0; background-image: var(--frame-url); background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none; z-index: 0; }
-.detail-scroll { position: relative; z-index: 1; overflow-y: auto; max-height: calc(100vh - 300px); padding: 0 8px 8px; margin-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.3) transparent; }
+.detail-scroll { position: relative; z-index: 1; overflow-y: auto; flex: 1; min-height: 0; padding: 0 8px 8px; margin-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.3) transparent; }
 .detail-scroll::-webkit-scrollbar { width: 6px; }
 .detail-scroll::-webkit-scrollbar-track { background: transparent; }
 .detail-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 999px; }
@@ -237,7 +237,7 @@ button { font-family: inherit; cursor: pointer; }
 .detail-panel.has-frame .tag { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.9); }
 .detail-panel.has-frame .tag.buff { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.4); color: #6ee7b7; }
 .detail-panel.has-frame .tag.debuff { background: rgba(220,38,38,0.2); border-color: rgba(220,38,38,0.4); color: #fca5a5; }
-.detail-sticky-head { position: sticky; top: 0; z-index: 2; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); margin: 0 -8px; padding: 8px 8px 0; }
+.detail-sticky-head { flex-shrink: 0; }
 .detail-sticky-head .detail-head { margin-bottom: 8px; }
 .gold-inline { display: inline-flex; align-items: center; gap: 3px; vertical-align: -2px; }
 .gold-inline img { width: 13px; height: 13px; }
@@ -299,8 +299,7 @@ button { font-family: inherit; cursor: pointer; }
   .feature-row { grid-template-columns: repeat(2, 1fr); }
   .strats-grid { grid-template-columns: 1fr; }
   .items-layout.with-detail { grid-template-columns: 1fr; }
-  .detail-panel { position: relative; top: 0; }
-  .detail-scroll { max-height: none; }
+  .detail-panel { position: relative; top: 0; max-height: none; }
 }
 @media (max-width: 768px) {
   .hero { grid-template-columns: 1fr; gap: 40px; }

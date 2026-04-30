@@ -185,7 +185,6 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
 
   return (
     <aside className="detail-panel has-frame" style={{ '--rarity': `var(--r-${k})`, '--frame-url': `url('/images/tooltip/TooltipBase_${item.rarity}.webp')` } as React.CSSProperties}>
-      <div className="detail-scroll">
       <div className="detail-sticky-head">
         <button className="detail-close" onClick={onClose}>×</button>
         <div className="detail-head">
@@ -224,6 +223,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="tooltip-divider" src={dividerSrc} alt="" />
       </div>{/* end detail-sticky-head */}
+      <div className="detail-scroll">
 
       {(item.cost != null || item.damage || item.cd != null || item.accuracy != null) && (
         <div className="stat-row">
