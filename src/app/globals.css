@@ -11,7 +11,7 @@
   --rule: var(--s-200); --rule-2: var(--s-300);
   --accent: var(--acc-600); --accent-2: var(--acc-700); --accent-soft: var(--acc-50);
   --r-common: var(--s-400); --r-rare: #2563eb; --r-epic: #9333ea;
-  --r-legend: #d97706; --r-godly: #dc2626; --r-unique: #0891b2;
+  --r-legend: #d97706; --r-godly: #dccd26; --r-unique: #08b243;
   --buff: #059669; --debuff: #dc2626;
   --shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
   --shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);

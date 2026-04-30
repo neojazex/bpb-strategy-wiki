@@ -146,12 +146,19 @@ export function tokenKind(name: string): 'buff' | 'debuff' | 'elem' {
   return (e as import('./types').Effect).kind;
 }
 
+const ELEMENT_ICONS: Record<string, string> = {
+  Star:     '/images/icons/Star.webp',
+  Diamond:  '/images/icons/Diamond.webp',
+  Treasure: '/images/icons/Icon_Treasure.webp',
+};
+
 export function effectIcon(name: string): string | null {
   const resolved = resolveEffect(name);
-  if (!resolved) return null;
-  const e = EFFECTS[resolved];
-  if (!e || 'alias' in e) return null;
-  return e.icon ?? null;
+  if (resolved) {
+    const e = EFFECTS[resolved];
+    if (e && !('alias' in e)) return e.icon ?? null;
+  }
+  return ELEMENT_ICONS[name] ?? null;
 }
 
 export function parseEffect(str: string) {
