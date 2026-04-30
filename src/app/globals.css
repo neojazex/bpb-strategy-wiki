@@ -181,7 +181,8 @@ button { font-family: inherit; cursor: pointer; }
 .detail-scroll::-webkit-scrollbar-track { background: transparent; }
 .detail-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 999px; }
 .tooltip-divider { display: block; width: calc(100% + 4px); margin: 8px -2px 14px; pointer-events: none; }
-.detail-panel.has-frame .detail-scroll { color: rgba(255,255,255,0.9); text-shadow: 0 1px 2px rgba(0,0,0,0.55); }
+.detail-panel.has-frame .detail-scroll,
+.detail-panel.has-frame .detail-sticky-head { color: rgba(255,255,255,0.9); text-shadow: 0 1px 2px rgba(0,0,0,0.55); }
 .detail-panel.has-frame .stat-row { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.12); border-radius: 6px; }
 .detail-panel.has-frame .stat-cell { background: transparent; }
 .detail-panel.has-frame .stat-cell .lbl { color: rgba(255,255,255,0.55); }
@@ -237,7 +238,7 @@ button { font-family: inherit; cursor: pointer; }
 .detail-panel.has-frame .tag { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.9); }
 .detail-panel.has-frame .tag.buff { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.4); color: #6ee7b7; }
 .detail-panel.has-frame .tag.debuff { background: rgba(220,38,38,0.2); border-color: rgba(220,38,38,0.4); color: #fca5a5; }
-.detail-sticky-head { flex-shrink: 0; }
+.detail-sticky-head { flex-shrink: 0; position: relative; z-index: 1; }
 .detail-sticky-head .detail-head { margin-bottom: 8px; }
 .gold-inline { display: inline-flex; align-items: center; gap: 3px; vertical-align: -2px; }
 .gold-inline img { width: 13px; height: 13px; }
