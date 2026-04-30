@@ -148,7 +148,7 @@ export function tokenKind(name: string): 'buff' | 'debuff' | 'elem' {
 
 const ELEMENT_ICONS: Record<string, string> = {
   Star:     '/images/icons/Star.webp',
-  Diamond:  '/images/icons/Diamond.webp',
+  Diamond:  '/images/icons/SecondaryStar_icon.webp',
   Treasure: '/images/icons/Icon_Treasure.webp',
 };
 
