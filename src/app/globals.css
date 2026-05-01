@@ -310,32 +310,31 @@ button { font-family: inherit; cursor: pointer; }
 
 .interactions-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Wrapper holds the badge via ::after so it floats outside the chip without affecting its size */
+/* ix-chip-wrap: badge lives here via ::after at z-index:1 — sits above the
+   chip's own stacking context (z-index:0), so z-index:1 is all it needs. */
 .ix-chip-wrap { position: relative; display: inline-flex; }
-.ix-chip-wrap.target-self::after {
-  content: "SELF";
-  position: absolute; top: -7px; right: -4px;
-  display: inline-block;
-  background: #8a3324; color: #fff;
-  padding: 3px 5px;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  border-radius: 4px;
-  pointer-events: none; z-index: 1;
-}
+.ix-chip-wrap.target-self::after,
 .ix-chip-wrap.target-enemy::after {
-  content: "ENEMY";
-  position: absolute; top: -7px; right: -4px;
+  position: absolute; top: -11px; right: 5px;
   display: inline-block;
-  background: #2c4670; color: #fff;
+  color: #fff;
   padding: 3px 5px;
   font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  border-radius: 4px;
+  border-radius: 20px;
   pointer-events: none; z-index: 1;
 }
+.ix-chip-wrap.target-self::after  { content: "SELF";  background: #8a3324; }
+.ix-chip-wrap.target-enemy::after { content: "ENEMY"; background: #2c4670; }
+
 .ix-chip {
   display: inline-flex; align-items: stretch; overflow: hidden;
   border: 1px solid var(--rule); border-radius: 6px;
   font-size: 0.75rem; font-weight: 500; line-height: 1;
   user-select: none;
+  /* z-index:0 establishes a stacking context so border-trace z-indices
+     (z-index:3 on ::before/::after) are contained inside this chip and
+     can't compete with the badge on the parent wrapper. */
+  z-index: 0;
 }
 /* Role accent colour for the border trace — set as a custom property so
    ::before / ::after on descendants can all reference the same value. */
