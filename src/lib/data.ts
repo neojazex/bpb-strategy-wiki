@@ -233,12 +233,41 @@ function classifyOccurrence(text: string, pos: number): EffectRole {
   return 'scales';
 }
 
+// Returns true if the character at `pos` sits inside an open $red[...] span.
+// Tracks nested $x[...] spans correctly so inner $h[1] etc. don't prematurely
+// close the outer $red[.
+function isInsideRedSpan(text: string, pos: number): boolean {
+  const before = text.slice(Math.max(0, pos - 150), pos);
+  const lastRedIdx = before.lastIndexOf('$red[');
+  if (lastRedIdx === -1) return false;
+  // Walk from after '$red[' and count bracket depth using $x[ openers and ] closers.
+  const afterOpener = before.slice(lastRedIdx + 5); // skip '$red['
+  let depth = 1;
+  for (let i = 0; i < afterOpener.length; i++) {
+    if (afterOpener[i] === '$' && i + 2 < afterOpener.length && afterOpener[i + 2] === '[') {
+      // single-char style names: $l[ $h[ $m[ $s[ etc.
+      depth++; i += 2; // loop will i++ → lands on content after '['
+    } else if (afterOpener[i] === ']') {
+      if (--depth === 0) return false; // $red[ was closed before our token
+    }
+  }
+  return depth > 0;
+}
+
 // Detect targeting modifier for an occurrence: only flags non-default cases.
 // Default: buffs go to self, debuffs go to opponent. We flag when inverted.
+//
+// Two signals:
+//   A) Token is inside a $red[...] span — the game uses red to warn of self-damage.
+//   B) "to yourself" / "$red[to yourself" appears within 20 chars immediately after
+//      the token closing '>'. 20 chars is tight enough that two tokens in the same
+//      clause (e.g. Poison Spear's first <Poison>) won't pick up the later qualifier.
 function detectOccurrenceTarget(text: string, pos: number): 'self' | 'enemy' | undefined {
-  const win = text.slice(Math.max(0, pos - 60), Math.min(text.length, pos + 100));
-  if (/\byourself\b/i.test(win)) return 'self';
-  if (/\b(?:your opponent|the opponent|enemy)\b/i.test(win)) return 'enemy';
+  if (isInsideRedSpan(text, pos)) return 'self';
+  const tokenEnd = text.indexOf('>', pos) + 1;
+  const after = text.slice(tokenEnd, Math.min(text.length, tokenEnd + 20));
+  if (/\byourself\b/i.test(after)) return 'self';
+  if (/\b(?:your opponent|the opponent)\b/i.test(after)) return 'enemy';
   return undefined;
 }
 
