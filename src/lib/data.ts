@@ -339,8 +339,14 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       // Standard verb scan (Inflict / Remove debuffs)
       for (const x of classifyMatches(t, /\bdebuffs?\b/g)) {
         if (x.role === 'scales') continue;
-        if (out.some(o => o.role === x.role)) continue;
-        out.push(x);
+        // For triggered-by, check if the $l[...] label says "Self-inflicted" → (Self) badge
+        let target: 'self' | 'enemy' | undefined;
+        if (x.role === 'triggered-by') {
+          const win = t.slice(Math.max(0, x.position - 30), x.position + 10);
+          if (/\bself\b/i.test(win)) target = 'self';
+        }
+        if (out.some(o => o.role === x.role && o.target === target)) continue;
+        out.push({ ...x, target });
       }
       return out;
     }
