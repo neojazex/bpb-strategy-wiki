@@ -337,8 +337,28 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 0.75rem; font-weight: 500; line-height: 1;
   user-select: none;
 }
-.ix-chip.navigable { cursor: pointer; transition: transform 0.06s, border-color 0.1s; }
-.ix-chip.navigable:hover { transform: translateY(-1px); border-color: var(--rule-2); }
+.ix-chip.navigable {
+  cursor: pointer; position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+/* Shimmer sweep: slides a translucent highlight across the chip on hover.
+   overflow:hidden on the parent clips it cleanly at the edges. */
+.ix-chip.navigable::before {
+  content: "";
+  position: absolute; top: 0; left: -100%;
+  width: 55%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  transition: none; /* instant reset when un-hovering */
+  pointer-events: none; z-index: 2;
+}
+.ix-chip.navigable:hover {
+  border-color: var(--rule-2);
+  box-shadow: 0 0 0 1px var(--rule-2);
+}
+.ix-chip.navigable:hover::before {
+  left: 150%;
+  transition: left 0.45s ease;
+}
 .ix-role {
   padding: 6px 9px;
   font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em;
