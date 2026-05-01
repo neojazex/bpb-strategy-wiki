@@ -304,13 +304,11 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
                   <span className="ix-effect">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {c.icon && <img src={c.icon} alt="" />}
-                    <span className="ix-name">{c.effect}</span>
-                  </span>
-                  {c.target && (
-                    <span className={`ix-target ${c.target}`}>
-                      {c.target === 'self' ? '(Self)' : '(Enemy)'}
+                    <span className="ix-name">
+                      {c.effect}
+                      {c.target && <span className={`ix-target ${c.target}`}>{c.target === 'self' ? 'Self' : 'Enemy'}</span>}
                     </span>
-                  )}
+                  </span>
                 </span>
               ))}
             </div>

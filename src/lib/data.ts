@@ -386,6 +386,8 @@ export function effectRolesForItem(item: import('./types').Item): InteractionChi
   const chips: InteractionChip[] = [];
 
   // Tokenized: <Regeneration>, <Luck>, etc.
+  // Deduplicate by (resolved-name, role, target) so the same effect can produce
+  // both a plain chip and a (Self)/(Enemy) chip when the item targets differ.
   const seenEffects = new Set<string>();
   const re = /<([A-Z][a-zA-Z]+)>/g;
   let m: RegExpExecArray | null;
@@ -397,25 +399,20 @@ export function effectRolesForItem(item: import('./types').Item): InteractionChi
     const aliases = [resolved];
     if (resolved === 'Vampirism') aliases.push('Vampiric');
     if (resolved === 'Vampiric') aliases.push('Vampirism');
-    const aliasRe = new RegExp(`<(?:${aliases.join('|')})>`, 'g');
-    const matches = classifyMatches(text, aliasRe);
-    if (matches.length === 0) continue;
     const e = EFFECTS[resolved];
     const kind: InteractionKind = (e && !('alias' in e)) ? (e as import('./types').Effect).kind : 'meta';
     const icon = effectIcon(resolved);
-    for (const { role, position } of matches) {
-      // Detect non-default target (self-debuff or buff-to-enemy) by scanning occurrences
-      // with this role. Only flag when it deviates from the implicit default.
-      let target: 'self' | 'enemy' | undefined;
-      if (role === 'generates') {
-        const scanRe = new RegExp(`<(?:${aliases.join('|')})>`, 'g');
-        let sm: RegExpExecArray | null;
-        while ((sm = scanRe.exec(text)) !== null) {
-          if (classifyOccurrence(text, sm.index) !== role) continue;
-          const t = detectOccurrenceTarget(text, sm.index);
-          if (t) { target = t; break; }
-        }
-      }
+    // Scan all occurrences; group by (role, target) — each unique pair → one chip
+    const chipMap = new Map<string, { role: EffectRole; target: 'self' | 'enemy' | undefined; position: number }>();
+    const scanRe = new RegExp(`<(?:${aliases.join('|')})>`, 'g');
+    let sm: RegExpExecArray | null;
+    while ((sm = scanRe.exec(text)) !== null) {
+      const role = classifyOccurrence(text, sm.index);
+      const tgt = (role === 'generates') ? detectOccurrenceTarget(text, sm.index) : undefined;
+      const key = `${role}:${tgt ?? ''}`;
+      if (!chipMap.has(key)) chipMap.set(key, { role, target: tgt, position: sm.index });
+    }
+    for (const { role, target, position } of chipMap.values()) {
       chips.push({ effect: resolved, kind, role, icon, navigable: true, position, target });
     }
   }

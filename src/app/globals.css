@@ -342,13 +342,18 @@ button { font-family: inherit; cursor: pointer; }
 .ix-chip.kind-debuff .ix-name { color: #7a2818; }
 .ix-chip.kind-meta   .ix-name { color: var(--ink-2); font-style: italic; }
 
-/* Target modifier badge — appended to chip when non-default target */
+/* Target modifier badge — superscript pill floating above the effect name */
 .ix-target {
-  display: inline-flex; align-items: center;
-  padding: 0 9px;
-  font-size: 0.63rem; font-weight: 700; letter-spacing: 0.04em;
-  border-left: 1px solid rgba(255,255,255,0.25);
+  display: inline-block;
+  padding: 3px 5px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  margin-left: 8px;
+  position: relative;
+  top: -8px;
   white-space: nowrap;
+  line-height: 1;
 }
 .ix-target.self  { background: #8a3324; color: #fff; }
 .ix-target.enemy { background: #2c4670; color: #fff; }
