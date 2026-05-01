@@ -201,69 +201,54 @@ export function itemsWithToken(items: import('./types').Item[], token: string) {
 }
 
 export type EffectRole = 'generates' | 'consumes' | 'removes' | 'scales';
+export type InteractionKind = 'buff' | 'debuff' | 'meta';
 
-// Classify how an item interacts with a buff/debuff by inspecting the immediate
-// context preceding each <Token> occurrence in its effect text. An item can
-// belong to multiple roles (e.g. Fancy Fencing Rapier both consumes and generates Luck).
-//
-// Verb gaps allow intervening <Tokens> (so "Use 7 <Block>, 7 <Luck>" tags both as
-// consumed) but exclude clause separators (".", ";") to avoid bleeding across
-// independent effects.
+// One chip per (effect, role) combination. Renders independently in the UI.
+export interface InteractionChip {
+  effect: string;      // display name
+  kind: InteractionKind;
+  role: EffectRole;
+  icon: string | null;
+  navigable: boolean;  // true when clicking should jump to the effect on the Effects page
+  position: number;    // first text-position the role was triggered at; used to sort chips in reading order
+}
+
+// Classify a single occurrence at `pos` by walking back up to 50 chars and
+// matching verb patterns. Periods and semicolons act as clause boundaries so
+// an earlier "Gain X." doesn't leak into a later "Use Y." clause.
+// Generates is checked before consumes so the closest unblocked verb wins
+// in "Use 1 <Mana> to gain 3 <Heat>" → Heat = generates.
+function classifyOccurrence(text: string, pos: number): EffectRole {
+  const before = text.slice(Math.max(0, pos - 50), pos);
+  const tail = before.slice(-30);
+  if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
+      /\bat least\s+\S+\s*$/i.test(tail)) return 'scales';
+  if (/\b(?:Remove|Steal|remove|steal)\b[^.;]{0,50}$/.test(before)) return 'removes';
+  if (/\b(?:Gain|Inflict|gain|inflict)\b[^.;]{0,50}$/.test(before)) return 'generates';
+  if (/\b(?:Use|use)\b[^.;]{0,50}$/.test(before)) return 'consumes';
+  return 'scales';
+}
+
+// Run `matchRe` over `text` and emit one (role, firstPosition) entry per
+// distinct role triggered. The position is the index of the *first* occurrence
+// that produced that role, so chips later sort by reading order.
+function classifyMatches(text: string, matchRe: RegExp): { role: EffectRole; position: number }[] {
+  const seen = new Map<EffectRole, number>();
+  let m: RegExpExecArray | null;
+  while ((m = matchRe.exec(text)) !== null) {
+    const role = classifyOccurrence(text, m.index);
+    if (!seen.has(role)) seen.set(role, m.index);
+  }
+  return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+}
+
+// Public API: just the role list (used by EffectsPage's itemsByRole grouping).
 export function classifyItemEffect(text: string, effectName: string): EffectRole[] {
   if (!text) return [];
   const aliases = [effectName];
   if (effectName === 'Vampirism') aliases.push('Vampiric');
   if (effectName === 'Vampiric') aliases.push('Vampirism');
-  const tokenAlt = aliases.join('|');
-  const tokenRe = new RegExp(`<(?:${tokenAlt})>`, 'g');
-  const roles = new Set<EffectRole>();
-
-  // Window sizes for "looking back" before a token occurrence
-  const SCALE_LOOKBACK = 30;   // "for each ", "per ", "at least N "
-  const VERB_LOOKBACK = 50;    // "Gain N ", "Inflict N ", "Use N ", "Remove N "
-
-  let m: RegExpExecArray | null;
-  while ((m = tokenRe.exec(text)) !== null) {
-    const before = text.slice(Math.max(0, m.index - VERB_LOOKBACK), m.index);
-    const tail = before.slice(-SCALE_LOOKBACK);
-
-    // Scaling: "for each X", "per X", "at least N X" — checked first because
-    // these patterns can contain a "gain" that's not actually generating the effect.
-    if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
-        /\bat least\s+\S+\s*$/i.test(tail)) {
-      roles.add('scales');
-      continue;
-    }
-
-    // Removes: "Remove N <X>" / "Steal N <X>" — buff stripping from opponent.
-    if (/\b(?:Remove|Steal|remove|steal)\b[^.;]{0,50}$/.test(before)) {
-      roles.add('removes');
-      continue;
-    }
-
-    // Generates: "Gain N <X>" / "Inflict N <X>". Checked BEFORE consumes so
-    // that "Use 1 <Mana> to gain 3 <Heat>" tags Heat as generates (the closer,
-    // unblocked verb to <Heat> is "gain"). Compound consumes still work
-    // because periods between clauses block earlier "Gain" verbs from
-    // matching across into the consume clause.
-    if (/\b(?:Gain|Inflict|gain|inflict)\b[^.;]{0,50}$/.test(before)) {
-      roles.add('generates');
-      continue;
-    }
-
-    // Consumes: "Use N <X>" / "use N <X>". Allows compound forms like
-    // "Use 7 <Block>, 7 <Luck>" by permitting intervening <Tokens>.
-    if (/\b(?:Use|use)\b[^.;]{0,50}$/.test(before)) {
-      roles.add('consumes');
-      continue;
-    }
-
-    // Default: item references the effect without a clear verb pattern
-    // (e.g. "<X> reached:" thresholds, "While you have <X>"). Treat as scales.
-    roles.add('scales');
-  }
-
-  return Array.from(roles);
+  return classifyMatches(text, new RegExp(`<(?:${aliases.join('|')})>`, 'g')).map(x => x.role);
 }
 
 export function itemsByRole(items: import('./types').Item[], effectName: string): Record<EffectRole, import('./types').Item[]> {
@@ -275,24 +260,108 @@ export function itemsByRole(items: import('./types').Item[], effectName: string)
   return result;
 }
 
-// For an item, list each known buff/debuff it touches and what roles it plays.
-// Used in the detail panel for an at-a-glance interaction summary.
-export function effectRolesForItem(item: import('./types').Item): { effect: string; roles: EffectRole[] }[] {
+// --- Implicit / meta interactions ---------------------------------------------
+// Concepts the game refers to without a <Token>: generic buff/debuff stripping,
+// stat changes (maximum health), and game-mechanic shifts (healing reduction).
+// Each detector returns (role, position) pairs so chips order by text appearance.
+type ImplicitDetector = (t: string) => { role: EffectRole; position: number }[];
+
+const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitDetector }[] = [
+  {
+    name: 'Buff', kind: 'meta',
+    detect: (t) => {
+      // "buff" / "buffs" not preceded by "de" (so "debuffs" doesn't match).
+      // Drop the 'scales' default since "If you have buffs" isn't actionable.
+      return classifyMatches(t, /(?<![Dd]e)\bbuffs?\b/g).filter(x => x.role !== 'scales');
+    }
+  },
+  {
+    name: 'Debuff', kind: 'meta',
+    detect: (t) => {
+      const out: { role: EffectRole; position: number }[] = [];
+      // "cleanse N debuff" reads as removing debuffs from self
+      const cleanseM = /\bcleanse\b[^.;]{0,30}\bdebuffs?\b/i.exec(t);
+      if (cleanseM) out.push({ role: 'removes', position: cleanseM.index });
+      // Standard verb scan (Inflict / Remove debuffs)
+      for (const x of classifyMatches(t, /\bdebuffs?\b/g)) {
+        if (x.role === 'scales') continue;
+        if (out.some(o => o.role === x.role)) continue;
+        out.push(x);
+      }
+      return out;
+    }
+  },
+  {
+    name: 'Maximum Health', kind: 'buff',
+    detect: (t) => {
+      const re = /\bmaximum health\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        const before = t.slice(Math.max(0, m.index - 50), m.index);
+        let role: EffectRole | null = null;
+        if (/\b(?:Gain|gain)\b[^.;]{0,50}$/.test(before)) role = 'generates';
+        else if (/\+\s*\d+\s*$/.test(before)) role = 'generates';
+        else if (/\b(?:Lose|lose|reduce)\b[^.;]{0,50}$/.test(before)) role = 'removes';
+        if (role && !seen.has(role)) seen.set(role, m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    name: 'Healing Reduction', kind: 'debuff',
+    detect: (t) => {
+      // Passive: "your opponent's healing is reduced by N%"
+      let m = /\bhealing\s+is\s+reduced\b/i.exec(t);
+      if (m) return [{ role: 'generates', position: m.index }];
+      // Active: "reduce N% healing", "reduce healing by N%"
+      m = /\breduce[^.;]{0,30}healing\b/i.exec(t);
+      if (m) return [{ role: 'generates', position: m.index }];
+      return [];
+    }
+  },
+];
+
+// For an item, return one chip per (effect, role) tuple — both tokenized and
+// implicit interactions interleaved by text-position so the rendered list
+// reads in the same order the player encounters them in the description.
+export function effectRolesForItem(item: import('./types').Item): InteractionChip[] {
   const text = item.effect;
   if (!text) return [];
-  const seen = new Set<string>();
+  const chips: InteractionChip[] = [];
+
+  // Tokenized: <Regeneration>, <Luck>, etc.
+  const seenEffects = new Set<string>();
   const re = /<([A-Z][a-zA-Z]+)>/g;
   let m: RegExpExecArray | null;
-  const out: { effect: string; roles: EffectRole[] }[] = [];
   while ((m = re.exec(text)) !== null) {
     const tok = m[1];
     const resolved = resolveEffect(tok);
-    if (!resolved || seen.has(resolved)) continue;
-    seen.add(resolved);
-    const roles = classifyItemEffect(text, resolved);
-    if (roles.length > 0) out.push({ effect: resolved, roles });
+    if (!resolved || seenEffects.has(resolved)) continue;
+    seenEffects.add(resolved);
+    const aliases = [resolved];
+    if (resolved === 'Vampirism') aliases.push('Vampiric');
+    if (resolved === 'Vampiric') aliases.push('Vampirism');
+    const matches = classifyMatches(text, new RegExp(`<(?:${aliases.join('|')})>`, 'g'));
+    if (matches.length === 0) continue;
+    const e = EFFECTS[resolved];
+    const kind: InteractionKind = (e && !('alias' in e)) ? (e as import('./types').Effect).kind : 'meta';
+    const icon = effectIcon(resolved);
+    for (const { role, position } of matches) {
+      chips.push({ effect: resolved, kind, role, icon, navigable: true, position });
+    }
   }
-  return out;
+
+  // Implicit / meta
+  for (const def of IMPLICIT_EFFECTS) {
+    for (const { role, position } of def.detect(text)) {
+      chips.push({ effect: def.name, kind: def.kind, role, icon: null, navigable: false, position });
+    }
+  }
+
+  // Sort by text position so chips appear in reading order.
+  chips.sort((a, b) => a.position - b.position);
+  return chips;
 }
 
 export function itemsForCharacter(items: import('./types').Item[], charId: string) {

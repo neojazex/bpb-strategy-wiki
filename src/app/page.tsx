@@ -6,7 +6,7 @@ import {
   rarityKey, formatDamage, resolveEffect, effectIcon, tokenKind,
   itemsWithToken, itemsForCharacter, itemsByRole, effectRolesForItem,
 } from '@/lib/data';
-import type { EffectRole } from '@/lib/data';
+import type { EffectRole, InteractionChip } from '@/lib/data';
 import ItemIcon from '@/components/ItemIcon';
 import EffectText from '@/components/EffectText';
 import ShapeGrid from '@/components/ShapeGrid';
@@ -283,31 +283,30 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
       )}
 
       {(() => {
-        const interactions = effectRolesForItem(item);
-        if (interactions.length === 0) return null;
-        const ROLE_SHORT: Record<EffectRole, string> = {
+        const chips: InteractionChip[] = effectRolesForItem(item);
+        if (chips.length === 0) return null;
+        const ROLE_LABEL: Record<EffectRole, string> = {
           generates: 'Generates', consumes: 'Consumes', removes: 'Removes', scales: 'Scales with',
         };
         return (
           <div className="detail-section">
             <h4>Interactions</h4>
-            <div className="interactions-list">
-              {interactions.map(({ effect, roles }) => {
-                const icon = effectIcon(effect);
-                const kind = tokenKind(effect);
-                return (
-                  <div key={effect} className="interaction-row">
-                    <span className={`tag ${kind}${!icon ? ' no-icon' : ''}`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => onNavigateEffect(effect)}>
-                      {icon && <img src={icon} alt="" />}{effect}
-                    </span>
-                    <div className="interaction-roles">
-                      {roles.map(r => <span key={r} className={`role-badge role-${r}`}>{ROLE_SHORT[r]}</span>)}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="interactions-chips">
+              {chips.map((c, i) => (
+                <span
+                  key={`${c.effect}-${c.role}-${i}`}
+                  className={`ix-chip role-${c.role} kind-${c.kind}${c.navigable ? ' navigable' : ''}`}
+                  onClick={() => c.navigable && onNavigateEffect(c.effect)}
+                  title={c.navigable ? `View ${c.effect} effect details` : undefined}
+                >
+                  <span className="ix-role">{ROLE_LABEL[c.role]}</span>
+                  <span className="ix-effect">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {c.icon && <img src={c.icon} alt="" />}
+                    <span className="ix-name">{c.effect}</span>
+                  </span>
+                </span>
+              ))}
             </div>
           </div>
         );
@@ -316,7 +315,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
       {tokensMentioned.length > 0 && (() => {
         // References section: only show tokens that didn't make it into Interactions
         // (i.e. element/type tokens like Star, Diamond, Treasure, plus Gold).
-        const interactionEffects = new Set(effectRolesForItem(item).map(x => x.effect));
+        const interactionEffects = new Set(effectRolesForItem(item).map(c => c.effect));
         const others = tokensMentioned.filter(t => !interactionEffects.has(resolveEffect(t) ?? ''));
         if (others.length === 0) return null;
         return (

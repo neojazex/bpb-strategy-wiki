@@ -308,24 +308,55 @@ button { font-family: inherit; cursor: pointer; }
 .role-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
 .role-count { color: var(--ink-3); font-weight: 500; font-size: 0.7rem; padding: 1px 7px; background: var(--bg-soft); border-radius: 999px; order: 0; margin-left: -2px; }
 
-.interactions-list { display: flex; flex-direction: column; gap: 8px; }
-.interaction-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.interaction-row .tag { flex-shrink: 0; }
-.interaction-roles { display: flex; flex-wrap: wrap; gap: 4px; }
-.role-badge { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 4px; border: 1px solid transparent; white-space: nowrap; }
-.role-badge.role-generates { background: rgba(58,138,82,0.14); color: #2e6e42; border-color: rgba(58,138,82,0.3); }
-.role-badge.role-consumes { background: rgba(192,138,62,0.14); color: #8a5e1e; border-color: rgba(192,138,62,0.3); }
-.role-badge.role-removes { background: rgba(138,51,36,0.14); color: #7a2818; border-color: rgba(138,51,36,0.3); }
-.role-badge.role-scales { background: rgba(58,90,138,0.14); color: #2c4670; border-color: rgba(58,90,138,0.3); }
-[data-theme="dark"] .role-badge.role-generates { color: #6cc28a; }
-[data-theme="dark"] .role-badge.role-consumes { color: #d6a558; }
-[data-theme="dark"] .role-badge.role-removes { color: #d97a6a; }
-[data-theme="dark"] .role-badge.role-scales { color: #7ba3d4; }
-.detail-panel.has-frame .role-badge { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.95); }
-.detail-panel.has-frame .role-badge.role-generates { box-shadow: inset 3px 0 0 #6cc28a; }
-.detail-panel.has-frame .role-badge.role-consumes { box-shadow: inset 3px 0 0 #d6a558; }
-.detail-panel.has-frame .role-badge.role-removes  { box-shadow: inset 3px 0 0 #d97a6a; }
-.detail-panel.has-frame .role-badge.role-scales   { box-shadow: inset 3px 0 0 #7ba3d4; }
+.interactions-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ix-chip {
+  display: inline-flex; align-items: stretch; overflow: hidden;
+  border: 1px solid var(--rule); border-radius: 6px;
+  font-size: 0.75rem; font-weight: 500; line-height: 1;
+  user-select: none;
+}
+.ix-chip.navigable { cursor: pointer; transition: transform 0.06s, border-color 0.1s; }
+.ix-chip.navigable:hover { transform: translateY(-1px); border-color: var(--rule-2); }
+.ix-role {
+  padding: 6px 9px;
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em;
+  display: inline-flex; align-items: center;
+}
+.ix-effect {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px;
+  background: var(--bg-soft);
+}
+.ix-effect img { width: 14px; height: 14px; object-fit: contain; }
+.ix-name { white-space: nowrap; }
+
+/* Role half — colored accent */
+.ix-chip.role-generates .ix-role { background: rgba(58,138,82,0.18); color: #2e6e42; }
+.ix-chip.role-consumes  .ix-role { background: rgba(192,138,62,0.18); color: #8a5e1e; }
+.ix-chip.role-removes   .ix-role { background: rgba(138,51,36,0.18); color: #7a2818; }
+.ix-chip.role-scales    .ix-role { background: rgba(58,90,138,0.18); color: #2c4670; }
+
+/* Effect half — kind-tinted name color */
+.ix-chip.kind-buff   .ix-name { color: var(--ink); }
+.ix-chip.kind-debuff .ix-name { color: #7a2818; }
+.ix-chip.kind-meta   .ix-name { color: var(--ink-2); font-style: italic; }
+
+[data-theme="dark"] .ix-chip.role-generates .ix-role { color: #6cc28a; }
+[data-theme="dark"] .ix-chip.role-consumes  .ix-role { color: #d6a558; }
+[data-theme="dark"] .ix-chip.role-removes   .ix-role { color: #d97a6a; }
+[data-theme="dark"] .ix-chip.role-scales    .ix-role { color: #7ba3d4; }
+[data-theme="dark"] .ix-chip.kind-debuff .ix-name { color: #d97a6a; }
+
+/* Parchment-frame variant */
+.detail-panel.has-frame .ix-chip { border-color: rgba(255,255,255,0.18); }
+.detail-panel.has-frame .ix-effect { background: rgba(0,0,0,0.3); }
+.detail-panel.has-frame .ix-name { color: rgba(255,255,255,0.95); }
+.detail-panel.has-frame .ix-chip.kind-debuff .ix-name { color: #ffb8a8; }
+.detail-panel.has-frame .ix-chip.kind-meta .ix-name { color: rgba(255,255,255,0.78); }
+.detail-panel.has-frame .ix-chip.role-generates .ix-role { background: rgba(58,138,82,0.55); color: #fff; }
+.detail-panel.has-frame .ix-chip.role-consumes  .ix-role { background: rgba(192,138,62,0.55); color: #fff; }
+.detail-panel.has-frame .ix-chip.role-removes   .ix-role { background: rgba(138,51,36,0.6); color: #fff; }
+.detail-panel.has-frame .ix-chip.role-scales    .ix-role { background: rgba(58,90,138,0.55); color: #fff; }
 .sources-filter { background: transparent; border: none; color: var(--accent); font-size: 0.7rem; letter-spacing: 0.04em; text-transform: none; font-weight: 600; cursor: pointer; padding: 0; }
 .sources-filter:hover { color: var(--accent-2); }
 .source-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
