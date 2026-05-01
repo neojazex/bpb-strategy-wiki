@@ -286,7 +286,8 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
         const chips: InteractionChip[] = effectRolesForItem(item);
         if (chips.length === 0) return null;
         const ROLE_LABEL: Record<EffectRole, string> = {
-          generates: 'Generates', consumes: 'Consumes', removes: 'Removes', scales: 'Scales with',
+          generates: 'Generates', consumes: 'Consumes', removes: 'Removes',
+          scales: 'Scales with', 'triggered-by': 'Triggered by',
         };
         return (
           <div className="detail-section">
@@ -295,7 +296,7 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
               {chips.map((c, i) => (
                 <span
                   key={`${c.effect}-${c.role}-${i}`}
-                  className={`ix-chip role-${c.role} kind-${c.kind}${c.navigable ? ' navigable' : ''}`}
+                  className={`ix-chip role-${c.role} kind-${c.kind}${c.navigable ? ' navigable' : ''}${c.target ? ` target-${c.target}` : ''}`}
                   onClick={() => c.navigable && onNavigateEffect(c.effect)}
                   title={c.navigable ? `View ${c.effect} effect details` : undefined}
                 >
@@ -305,6 +306,11 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
                     {c.icon && <img src={c.icon} alt="" />}
                     <span className="ix-name">{c.effect}</span>
                   </span>
+                  {c.target && (
+                    <span className={`ix-target ${c.target}`}>
+                      {c.target === 'self' ? '(Self)' : '(Enemy)'}
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
@@ -603,11 +609,12 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
     consumes: 'Consumes',
     removes: 'Removes',
     scales: 'Scales with',
+    'triggered-by': 'Triggered by',
   };
 
   function EffectCard({ name, e }: { name: string; e: import('@/lib/types').Effect }) {
     const byRole = useMemo(() => itemsByRole(items, name), [items, name]);
-    const total = byRole.generates.length + byRole.consumes.length + byRole.removes.length + byRole.scales.length;
+    const total = byRole.generates.length + byRole.consumes.length + byRole.removes.length + byRole.scales.length + byRole['triggered-by'].length;
     return (
       <div className="effect-card" data-effect={name} style={{ '--effect-color': e.color } as React.CSSProperties}>
         <h3>
@@ -626,7 +633,7 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
               <span>Items</span>
               <button className="sources-filter" onClick={() => onFilterEffect(name)}>Filter all →</button>
             </div>
-            {(['generates', 'consumes', 'removes', 'scales'] as EffectRole[]).map(role => (
+            {(['generates', 'consumes', 'removes', 'scales', 'triggered-by'] as EffectRole[]).map(role => (
               <RoleGroup key={role} label={ROLE_LABELS[role]} list={byRole[role]} />
             ))}
           </div>

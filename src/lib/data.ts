@@ -200,7 +200,7 @@ export function itemsWithToken(items: import('./types').Item[], token: string) {
   return items.filter(it => it.effect && re.test(it.effect));
 }
 
-export type EffectRole = 'generates' | 'consumes' | 'removes' | 'scales';
+export type EffectRole = 'generates' | 'consumes' | 'removes' | 'scales' | 'triggered-by';
 export type InteractionKind = 'buff' | 'debuff' | 'meta';
 
 // One chip per (effect, role) combination. Renders independently in the UI.
@@ -211,6 +211,7 @@ export interface InteractionChip {
   icon: string | null;
   navigable: boolean;  // true when clicking should jump to the effect on the Effects page
   position: number;    // first text-position the role was triggered at; used to sort chips in reading order
+  target?: 'self' | 'enemy'; // only set when non-default (self-debuff or buff-to-enemy)
 }
 
 // Classify a single occurrence at `pos` by walking back up to 50 chars and
@@ -220,6 +221,8 @@ export interface InteractionChip {
 // in "Use 1 <Mana> to gain 3 <Heat>" → Heat = generates.
 function classifyOccurrence(text: string, pos: number): EffectRole {
   const before = text.slice(Math.max(0, pos - 50), pos);
+  // Token inside $l[...] trigger label → it's what triggers the effect, not an action target
+  if (/\$l\[[^\]]*$/.test(before)) return 'triggered-by';
   const tail = before.slice(-30);
   if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
       /\bat least\s+\S+\s*$/i.test(tail)) return 'scales';
@@ -228,6 +231,15 @@ function classifyOccurrence(text: string, pos: number): EffectRole {
   if (/\b(?:Gain|Inflict|gain|inflict|into)\b[^.;]{0,50}$/.test(before)) return 'generates';
   if (/\b(?:Use|use)\b[^.;]{0,50}$/.test(before)) return 'consumes';
   return 'scales';
+}
+
+// Detect targeting modifier for an occurrence: only flags non-default cases.
+// Default: buffs go to self, debuffs go to opponent. We flag when inverted.
+function detectOccurrenceTarget(text: string, pos: number): 'self' | 'enemy' | undefined {
+  const win = text.slice(Math.max(0, pos - 60), Math.min(text.length, pos + 100));
+  if (/\byourself\b/i.test(win)) return 'self';
+  if (/\b(?:your opponent|the opponent|enemy)\b/i.test(win)) return 'enemy';
+  return undefined;
 }
 
 // Run `matchRe` over `text` and emit one (role, firstPosition) entry per
@@ -253,7 +265,7 @@ export function classifyItemEffect(text: string, effectName: string): EffectRole
 }
 
 export function itemsByRole(items: import('./types').Item[], effectName: string): Record<EffectRole, import('./types').Item[]> {
-  const result: Record<EffectRole, import('./types').Item[]> = { generates: [], consumes: [], removes: [], scales: [] };
+  const result: Record<EffectRole, import('./types').Item[]> = { generates: [], consumes: [], removes: [], scales: [], 'triggered-by': [] };
   for (const it of itemsWithToken(items, effectName)) {
     const roles = classifyItemEffect(it.effect ?? '', effectName);
     for (const r of roles) result[r].push(it);
@@ -321,6 +333,48 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       return [];
     }
   },
+  {
+    name: 'Stun', kind: 'debuff',
+    detect: (t) => {
+      // "stun" is the verb itself, so always marks as generated
+      const re = /\bstun\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    name: 'Invulnerability', kind: 'buff',
+    detect: (t) => {
+      const re = /\b(?:invulnerable|invulnerability)\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    name: 'Damage Reduction', kind: 'buff',
+    detect: (t) => {
+      // Various phrasings for taking less damage
+      const patterns = [
+        /\breduce[s]?\s+damage\s+taken\b/i,
+        /\btakes?\s+\d+%?\s+less\s+damage\b/i,
+        /\bdamage\s+(?:is\s+)?reduced\b/i,
+        /\bless\s+damage\b/i,
+      ];
+      for (const pat of patterns) {
+        const m = pat.exec(t);
+        if (m) return [{ role: 'generates' as EffectRole, position: m.index }];
+      }
+      return [];
+    }
+  },
 ];
 
 // For an item, return one chip per (effect, role) tuple — both tokenized and
@@ -343,13 +397,26 @@ export function effectRolesForItem(item: import('./types').Item): InteractionChi
     const aliases = [resolved];
     if (resolved === 'Vampirism') aliases.push('Vampiric');
     if (resolved === 'Vampiric') aliases.push('Vampirism');
-    const matches = classifyMatches(text, new RegExp(`<(?:${aliases.join('|')})>`, 'g'));
+    const aliasRe = new RegExp(`<(?:${aliases.join('|')})>`, 'g');
+    const matches = classifyMatches(text, aliasRe);
     if (matches.length === 0) continue;
     const e = EFFECTS[resolved];
     const kind: InteractionKind = (e && !('alias' in e)) ? (e as import('./types').Effect).kind : 'meta';
     const icon = effectIcon(resolved);
     for (const { role, position } of matches) {
-      chips.push({ effect: resolved, kind, role, icon, navigable: true, position });
+      // Detect non-default target (self-debuff or buff-to-enemy) by scanning occurrences
+      // with this role. Only flag when it deviates from the implicit default.
+      let target: 'self' | 'enemy' | undefined;
+      if (role === 'generates') {
+        const scanRe = new RegExp(`<(?:${aliases.join('|')})>`, 'g');
+        let sm: RegExpExecArray | null;
+        while ((sm = scanRe.exec(text)) !== null) {
+          if (classifyOccurrence(text, sm.index) !== role) continue;
+          const t = detectOccurrenceTarget(text, sm.index);
+          if (t) { target = t; break; }
+        }
+      }
+      chips.push({ effect: resolved, kind, role, icon, navigable: true, position, target });
     }
   }
 
