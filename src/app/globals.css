@@ -337,38 +337,68 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 0.75rem; font-weight: 500; line-height: 1;
   user-select: none;
 }
-.ix-chip.navigable {
-  cursor: pointer; position: relative;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-/* Shimmer sweep: slides a translucent highlight across the chip on hover.
-   overflow:hidden on the parent clips it cleanly at the edges. */
+/* Role accent colour for the border trace — set as a custom property so
+   ::before / ::after on descendants can all reference the same value. */
+.ix-chip.role-generates  { --bdr: #3a8a52; }
+.ix-chip.role-consumes   { --bdr: #b27a18; }
+.ix-chip.role-removes    { --bdr: #8a3324; }
+.ix-chip.role-scales     { --bdr: #3a5a8a; }
+.ix-chip.role-triggered-by { --bdr: #6c4894; }
+
+/* Border-trace hover: four lines grow in simultaneously from two opposite
+   corners (top-left → right & down; bottom-right → left & up).
+   overflow:hidden on the chip clips the lines' starting-at-zero state
+   and their rounded corners automatically. Instant reset on mouse-leave
+   (transition:none in the non-hover state). */
+.ix-chip.navigable { cursor: pointer; position: relative; transition: border-color 0.2s; }
+
+/* Top: grows rightward from top-left */
 .ix-chip.navigable::before {
-  content: "";
-  position: absolute; top: 0; left: -100%;
-  width: 55%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
-  transition: none; /* instant reset when un-hovering */
-  pointer-events: none; z-index: 2;
+  content: ""; position: absolute; top: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--bdr, var(--rule-2));
+  transition: none; pointer-events: none; z-index: 3;
 }
-.ix-chip.navigable:hover {
-  border-color: var(--rule-2);
-  box-shadow: 0 0 0 1px var(--rule-2);
+/* Bottom: grows leftward from bottom-right */
+.ix-chip.navigable::after {
+  content: ""; position: absolute; bottom: 0; right: 0;
+  width: 0; height: 2px;
+  background: var(--bdr, var(--rule-2));
+  transition: none; pointer-events: none; z-index: 3;
 }
-.ix-chip.navigable:hover::before {
-  left: 150%;
-  transition: left 0.45s ease;
-}
+.ix-chip.navigable:hover { border-color: var(--bdr, var(--rule-2)); }
+.ix-chip.navigable:hover::before { width: 100%; transition: width 0.35s cubic-bezier(0.4,0,0.2,1); }
+.ix-chip.navigable:hover::after  { width: 100%; transition: width 0.35s cubic-bezier(0.4,0,0.2,1); }
+
 .ix-role {
+  position: relative; /* needed for left-border pseudo-element */
   padding: 6px 9px;
   font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em;
   display: inline-flex; align-items: center;
 }
+/* Left: grows downward from top-left */
+.ix-chip.navigable .ix-role::before {
+  content: ""; position: absolute; left: 0; top: 0;
+  width: 2px; height: 0;
+  background: var(--bdr, var(--rule-2));
+  transition: none; pointer-events: none; z-index: 3;
+}
+.ix-chip.navigable:hover .ix-role::before { height: 100%; transition: height 0.35s cubic-bezier(0.4,0,0.2,1); }
+
 .ix-effect {
+  position: relative; /* needed for right-border pseudo-element */
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 10px;
   background: var(--bg-soft);
 }
+/* Right: grows upward from bottom-right */
+.ix-chip.navigable .ix-effect::after {
+  content: ""; position: absolute; right: 0; bottom: 0;
+  width: 2px; height: 0;
+  background: var(--bdr, var(--rule-2));
+  transition: none; pointer-events: none; z-index: 3;
+}
+.ix-chip.navigable:hover .ix-effect::after { height: 100%; transition: height 0.35s cubic-bezier(0.4,0,0.2,1); }
 .ix-effect img { width: 14px; height: 14px; object-fit: contain; }
 .ix-name { white-space: nowrap; }
 
@@ -385,6 +415,11 @@ button { font-family: inherit; cursor: pointer; }
 .ix-chip.kind-meta   .ix-name { color: var(--ink-2); font-style: italic; }
 
 
+[data-theme="dark"] .ix-chip.role-generates  { --bdr: #6cc28a; }
+[data-theme="dark"] .ix-chip.role-consumes   { --bdr: #d6a558; }
+[data-theme="dark"] .ix-chip.role-removes    { --bdr: #d97a6a; }
+[data-theme="dark"] .ix-chip.role-scales     { --bdr: #7ba3d4; }
+[data-theme="dark"] .ix-chip.role-triggered-by { --bdr: #b899e0; }
 [data-theme="dark"] .ix-chip.role-generates  .ix-role { color: #6cc28a; }
 [data-theme="dark"] .ix-chip.role-consumes   .ix-role { color: #d6a558; }
 [data-theme="dark"] .ix-chip.role-removes    .ix-role { color: #d97a6a; }
@@ -393,7 +428,7 @@ button { font-family: inherit; cursor: pointer; }
 [data-theme="dark"] .ix-chip.kind-debuff .ix-name { color: #d97a6a; }
 
 /* Parchment-frame variant */
-.detail-panel.has-frame .ix-chip { border-color: rgba(255,255,255,0.18); }
+.detail-panel.has-frame .ix-chip { border-color: rgba(255,255,255,0.18); --bdr: rgba(255,255,255,0.7); }
 .detail-panel.has-frame .ix-effect { background: rgba(0,0,0,0.3); }
 .detail-panel.has-frame .ix-name { color: rgba(255,255,255,0.95); }
 .detail-panel.has-frame .ix-chip.kind-debuff .ix-name { color: #ffb8a8; }
