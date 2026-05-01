@@ -309,6 +309,28 @@ button { font-family: inherit; cursor: pointer; }
 .role-count { color: var(--ink-3); font-weight: 500; font-size: 0.7rem; padding: 1px 7px; background: var(--bg-soft); border-radius: 999px; order: 0; margin-left: -2px; }
 
 .interactions-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Wrapper holds the badge via ::after so it floats outside the chip without affecting its size */
+.ix-chip-wrap { position: relative; display: inline-flex; }
+.ix-chip-wrap.target-self::after {
+  content: "SELF";
+  position: absolute; top: -7px; right: -4px;
+  display: inline-block;
+  background: #8a3324; color: #fff;
+  padding: 3px 5px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 4px;
+  pointer-events: none; z-index: 1;
+}
+.ix-chip-wrap.target-enemy::after {
+  content: "ENEMY";
+  position: absolute; top: -7px; right: -4px;
+  display: inline-block;
+  background: #2c4670; color: #fff;
+  padding: 3px 5px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 4px;
+  pointer-events: none; z-index: 1;
+}
 .ix-chip {
   display: inline-flex; align-items: stretch; overflow: hidden;
   border: 1px solid var(--rule); border-radius: 6px;
@@ -342,21 +364,6 @@ button { font-family: inherit; cursor: pointer; }
 .ix-chip.kind-debuff .ix-name { color: #7a2818; }
 .ix-chip.kind-meta   .ix-name { color: var(--ink-2); font-style: italic; }
 
-/* Target modifier badge — superscript pill floating above the effect name */
-.ix-target {
-  display: inline-block;
-  padding: 3px 5px;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-radius: 4px;
-  margin-left: 8px;
-  position: relative;
-  top: -8px;
-  white-space: nowrap;
-  line-height: 1;
-}
-.ix-target.self  { background: #8a3324; color: #fff; }
-.ix-target.enemy { background: #2c4670; color: #fff; }
 
 [data-theme="dark"] .ix-chip.role-generates  .ix-role { color: #6cc28a; }
 [data-theme="dark"] .ix-chip.role-consumes   .ix-role { color: #d6a558; }

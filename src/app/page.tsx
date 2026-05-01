@@ -294,19 +294,17 @@ function DetailPanel({ item, allItems, onClose, onSelectItem, onNavigateEffect }
             <h4>Interactions</h4>
             <div className="interactions-chips">
               {chips.map((c, i) => (
-                <span
-                  key={`${c.effect}-${c.role}-${i}`}
-                  className={`ix-chip role-${c.role} kind-${c.kind}${c.navigable ? ' navigable' : ''}${c.target ? ` target-${c.target}` : ''}`}
-                  onClick={() => c.navigable && onNavigateEffect(c.effect)}
-                  title={c.navigable ? `View ${c.effect} effect details` : undefined}
-                >
-                  <span className="ix-role">{ROLE_LABEL[c.role]}</span>
-                  <span className="ix-effect">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {c.icon && <img src={c.icon} alt="" />}
-                    <span className="ix-name">
-                      {c.effect}
-                      {c.target && <span className={`ix-target ${c.target}`}>{c.target === 'self' ? 'Self' : 'Enemy'}</span>}
+                <span key={`${c.effect}-${c.role}-${i}`} className={`ix-chip-wrap${c.target ? ` target-${c.target}` : ''}`}>
+                  <span
+                    className={`ix-chip role-${c.role} kind-${c.kind}${c.navigable ? ' navigable' : ''}`}
+                    onClick={() => c.navigable && onNavigateEffect(c.effect)}
+                    title={c.navigable ? `View ${c.effect} effect details` : undefined}
+                  >
+                    <span className="ix-role">{ROLE_LABEL[c.role]}</span>
+                    <span className="ix-effect">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {c.icon && <img src={c.icon} alt="" />}
+                      <span className="ix-name">{c.effect}</span>
                     </span>
                   </span>
                 </span>
