@@ -305,16 +305,28 @@ export function itemsByRole(items: import('./types').Item[], effectName: string)
 // --- Implicit / meta interactions ---------------------------------------------
 // Concepts the game refers to without a <Token>: generic buff/debuff stripping,
 // stat changes (maximum health), and game-mechanic shifts (healing reduction).
-// Each detector returns (role, position) pairs so chips order by text appearance.
-type ImplicitDetector = (t: string) => { role: EffectRole; position: number }[];
+// Each detector returns (role, position, target?) triples so chips order by text
+// appearance and can carry Self/Enemy badges just like tokenized chips.
+type ImplicitMatch = { role: EffectRole; position: number; target?: 'self' | 'enemy' };
+type ImplicitDetector = (t: string) => ImplicitMatch[];
 
 const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitDetector }[] = [
   {
     name: 'Buff', kind: 'meta',
-    detect: (t) => {
+    detect: (t): ImplicitMatch[] => {
       // "buff" / "buffs" not preceded by "de" (so "debuffs" doesn't match).
       // Drop the 'scales' default since "If you have buffs" isn't actionable.
-      return classifyMatches(t, /(?<![Dd]e)\bbuffs?\b/g).filter(x => x.role !== 'scales');
+      const results: ImplicitMatch[] = classifyMatches(t, /(?<![Dd]e)\bbuffs?\b/g)
+        .filter(x => x.role !== 'scales');
+      // "your opponent gains N random buffs" isn't caught by the verb lookback
+      // (uses "gains" not "gain") — detect it explicitly as Generates (Enemy).
+      const enemyRe = /\byour opponent\b[^.;]{0,30}\bbuffs?\b/gi;
+      let m: RegExpExecArray | null;
+      while ((m = enemyRe.exec(t)) !== null) {
+        if (!results.some(r => r.role === 'generates' && r.target === 'enemy'))
+          results.push({ role: 'generates', position: m.index, target: 'enemy' });
+      }
+      return results;
     }
   },
   {
@@ -364,15 +376,27 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
   },
   {
     name: 'Stun', kind: 'debuff',
-    detect: (t) => {
-      // "stun" is the verb itself, so always marks as generated
+    detect: (t): ImplicitMatch[] => {
+      // "stun" is the verb itself. When both "opponent" and "yourself" appear in
+      // the clause (e.g. "Stun opponent for 1s and yourself for 0.5s"), emit two
+      // chips: plain (default = opponent) + (Self).
       const re = /\bstun\b/gi;
-      const seen = new Map<EffectRole, number>();
+      const chips: ImplicitMatch[] = [];
+      const seenKeys = new Set<string>();
       let m: RegExpExecArray | null;
       while ((m = re.exec(t)) !== null) {
-        if (!seen.has('generates')) seen.set('generates', m.index);
+        const win = t.slice(Math.max(0, m.index - 10), Math.min(t.length, m.index + m[0].length + 70));
+        const hasSelf = /\byourself\b/i.test(win);
+        if (!seenKeys.has('generates:')) {
+          seenKeys.add('generates:');
+          chips.push({ role: 'generates', position: m.index });
+        }
+        if (hasSelf && !seenKeys.has('generates:self')) {
+          seenKeys.add('generates:self');
+          chips.push({ role: 'generates', position: m.index, target: 'self' });
+        }
       }
-      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+      return chips;
     }
   },
   {
@@ -402,6 +426,57 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
         if (m) return [{ role: 'generates' as EffectRole, position: m.index }];
       }
       return [];
+    }
+  },
+  {
+    // "Deal N% of your healing as <Effect>" — convert healing output into bonus damage.
+    // Several items use this mechanic (Harold, Vampire's Fang, etc.).
+    name: 'Retribution', kind: 'meta',
+    detect: (t) => {
+      const re = /\bof your healing\b|\bhealing as\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    // Stamina is the game's ATB-like resource — slowly fills over time, consumed by weapons.
+    // "Use N stamina" → Consumes; "$l[N stamina used:]" trigger label → Triggered-by.
+    name: 'Stamina', kind: 'meta',
+    detect: (t) => {
+      const results: ImplicitMatch[] = [];
+      const seen = new Set<string>();
+      // Consumes: "Use [up to] N stamina" or "[N] stamina used" (inline, not trigger label)
+      const consumeRe = /\buse\s+(?:up\s+to\s+)?[\d$\w]+\s+stamina\b(?!\s*\])/gi;
+      let m: RegExpExecArray | null;
+      while ((m = consumeRe.exec(t)) !== null) {
+        if (!seen.has('consumes')) { seen.add('consumes'); results.push({ role: 'consumes', position: m.index }); }
+      }
+      // Triggered-by: "$l[N stamina used:]" as a trigger condition label
+      const triggerRe = /\$l\[[^\]]*stamina\s+used:/gi;
+      while ((m = triggerRe.exec(t)) !== null) {
+        if (!seen.has('triggered-by')) { seen.add('triggered-by'); results.push({ role: 'triggered-by', position: m.index }); }
+      }
+      return results;
+    }
+  },
+  {
+    // Flat healing actions ("Heal for N", "Heal N HP") as distinct from Regeneration
+    // (which ticks per stack) or healing percentages. Covers the most common heal verb.
+    name: 'Heal', kind: 'buff',
+    detect: (t) => {
+      // Match "Heal for" (most common) or bare "Heal N" patterns. Avoid matching
+      // "Healing Reduction" or "healing as <Effect>" (caught by other detectors).
+      const re = /\bheal\s+for\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
     }
   },
 ];
@@ -446,10 +521,10 @@ export function effectRolesForItem(item: import('./types').Item): InteractionChi
     }
   }
 
-  // Implicit / meta
+  // Implicit / meta — target field forwarded so Self/Enemy badges appear on these too
   for (const def of IMPLICIT_EFFECTS) {
-    for (const { role, position } of def.detect(text)) {
-      chips.push({ effect: def.name, kind: def.kind, role, icon: null, navigable: false, position });
+    for (const { role, position, target } of def.detect(text)) {
+      chips.push({ effect: def.name, kind: def.kind, role, icon: null, navigable: false, position, target });
     }
   }
 
