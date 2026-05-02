@@ -624,6 +624,31 @@ export function itemsForCharacter(items: import('./types').Item[], charId: strin
   return items.filter(it => Array.isArray(it.sockets) && it.sockets.includes(charId));
 }
 
+// --- Misc effects (for Effects page) -----------------------------------------
+// All implicit effects except the generic Buff/Debuff meta-detectors, which
+// don't map to a single distinct mechanic and would be too noisy to list.
+export const MISC_EFFECTS: { name: string; kind: InteractionKind }[] = IMPLICIT_EFFECTS
+  .filter(d => d.name !== 'Buff' && d.name !== 'Debuff')
+  .map(d => ({ name: d.name, kind: d.kind }));
+
+// Items that trigger the named implicit effect, grouped by role.
+export function itemsByImplicitRole(
+  items: import('./types').Item[],
+  implicitName: string,
+): Record<EffectRole, import('./types').Item[]> {
+  const result: Record<EffectRole, import('./types').Item[]> = {
+    generates: [], consumes: [], removes: [], scales: [], 'triggered-by': [],
+  };
+  const def = IMPLICIT_EFFECTS.find(d => d.name === implicitName);
+  if (!def) return result;
+  for (const it of items) {
+    if (!it.effect) continue;
+    const roles = new Set(def.detect(it.effect).map(m => m.role));
+    for (const role of roles) result[role].push(it);
+  }
+  return result;
+}
+
 // Canonical pair key — always slug_a < slug_b
 export function pairKey(a: string, b: string): [string, string] {
   return a < b ? [a, b] : [b, a];

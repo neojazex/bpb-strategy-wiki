@@ -2,9 +2,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Item } from '@/lib/types';
 import {
-  CHARACTERS, EFFECTS, STRATEGIES, TIER, RARITY_ORDER,
+  CHARACTERS, EFFECTS, STRATEGIES, TIER, RARITY_ORDER, MISC_EFFECTS,
   rarityKey, formatDamage, resolveEffect, effectIcon, tokenKind,
-  itemsWithToken, itemsForCharacter, itemsByRole, effectRolesForItem,
+  itemsWithToken, itemsForCharacter, itemsByRole, itemsByImplicitRole, effectRolesForItem,
 } from '@/lib/data';
 import type { EffectRole, InteractionChip } from '@/lib/data';
 import ItemIcon from '@/components/ItemIcon';
@@ -641,6 +641,29 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
     );
   }
 
+  function MiscCard({ name, kind }: { name: string; kind: 'buff' | 'debuff' | 'meta' }) {
+    const byRole = useMemo(() => itemsByImplicitRole(items, name), [name]);
+    const total = Object.values(byRole).reduce((s, a) => s + a.length, 0);
+    const kindLabel = kind === 'buff' ? 'Buff' : kind === 'debuff' ? 'Debuff' : 'Misc';
+    return (
+      <div className="effect-card misc-card" data-effect={name}>
+        <h3>
+          <span className="glyph fallback">{name[0]}</span>
+          {name}
+        </h3>
+        <div className="kind">{kindLabel}</div>
+        {total > 0 && (
+          <div className="sources-section">
+            <div className="sources-head"><span>Items</span></div>
+            {(['generates', 'consumes', 'removes', 'scales', 'triggered-by'] as EffectRole[]).map(role => (
+              <RoleGroup key={role} label={ROLE_LABELS[role]} list={byRole[role]} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="scaffold-note"><strong>Scaffold:</strong> formulas reflect the described mechanics. Refine numbers and edge cases as you confirm them.</div>
@@ -651,6 +674,10 @@ function EffectsPage({ items, onFilterEffect, onSelectItem }: {
       <div className="effects-section">
         <div className="group-title">Debuffs</div>
         <div className="effects-grid">{debuffs.map(([name, e]) => <EffectCard key={name} name={name} e={e} />)}</div>
+      </div>
+      <div className="effects-section">
+        <div className="group-title">Misc</div>
+        <div className="effects-grid">{MISC_EFFECTS.map(({ name, kind }) => <MiscCard key={name} name={name} kind={kind} />)}</div>
       </div>
     </div>
   );
