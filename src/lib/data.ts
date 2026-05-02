@@ -227,7 +227,7 @@ function classifyOccurrence(text: string, pos: number): EffectRole {
   const tail = before.slice(-30);
   if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
       /\bat least\s+\S+\s*$/i.test(tail)) return 'scales';
-  if (/\b(?:Remove|Steal|Cleanse|remove|steal|cleanse)\b[^.;]{0,50}$/.test(before)) return 'removes';
+  if (/\b(?:Remove|Steal|Cleanse|Destroy|remove|steal|cleanse|destroy)\b[^.;]{0,50}$/.test(before)) return 'removes';
   // 80-char clause limit covers "Gain X $m[or] Y $m[or] Z" (≤52 chars between Gain and last token).
   // "into N <X>" covers "Convert N health into 100 <Block>" — the conversion target.
   if (/\b(?:Gain|Inflict|gain|inflict|into)\b[^.;]{0,80}$/.test(before)) return 'generates';
