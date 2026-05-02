@@ -341,6 +341,10 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       // Standard verb scan (Inflict / Remove / Scales-with debuffs).
       // 'scales' is allowed here — "for each debuff" is a real interaction (e.g. Darksaber).
       for (const x of classifyMatches(t, /\bdebuffs?\b/g)) {
+        // "resist debuffs" is captured by the Resistance detector — skip to avoid
+        // a misleading 'Scales with Debuff' chip on items like Poison Ivy.
+        const ctx = t.slice(Math.max(0, x.position - 30), x.position);
+        if (/\bresist\b/i.test(ctx)) continue;
         // For triggered-by, check if the $l[...] label says "Self-inflicted" → (Self) badge
         let target: 'self' | 'enemy' | undefined;
         if (x.role === 'triggered-by') {
@@ -596,6 +600,39 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
         while ((m = re.exec(t)) !== null) {
           if (!seen.has('generates')) seen.set('generates', m.index);
         }
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    // Opponent takes increased damage — the offensive counterpart to Damage Reduction.
+    // Patterns: "your opponent takes +N% damage", "they take +N% damage".
+    name: 'Vulnerability', kind: 'debuff',
+    detect: (t): ImplicitMatch[] => {
+      const patterns = [
+        /\b(?:your\s+)?opponent\s+takes?\s+\+\d+%\s+(?:more\s+)?damage\b/gi,
+        /\bthey\s+take\s+\+\d+%\s+(?:more\s+)?damage\b/gi,
+      ];
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      for (const re of patterns) {
+        while ((m = re.exec(t)) !== null) {
+          if (!seen.has('generates')) seen.set('generates', m.index);
+        }
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    // Passive chance to ignore incoming debuffs, stuns, crits, or specific effects.
+    // Covers "Resist N debuffs", "chance to resist stuns", "resist <Poison>", etc.
+    name: 'Resistance', kind: 'buff',
+    detect: (t): ImplicitMatch[] => {
+      const re = /\bresists?\b[^.;]{0,50}(?:debuffs?|stuns?|critical\s+hits?|<\w+>)/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
       }
       return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
     }
