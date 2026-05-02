@@ -538,7 +538,7 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
     // Distinct from Weapon Damage (one-time grant via "give +N damage (once)").
     name: 'Damage', kind: 'buff',
     detect: (t): ImplicitMatch[] => {
-      const re = /\bgain\s+\d+\s+damage\b/gi;
+      const re = /\bgain\s+\+?\d+\s+damage\b/gi;
       const seen = new Map<EffectRole, number>();
       let m: RegExpExecArray | null;
       while ((m = re.exec(t)) !== null) {
