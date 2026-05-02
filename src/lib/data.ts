@@ -220,15 +220,17 @@ export interface InteractionChip {
 // Generates is checked before consumes so the closest unblocked verb wins
 // in "Use 1 <Mana> to gain 3 <Heat>" → Heat = generates.
 function classifyOccurrence(text: string, pos: number): EffectRole {
-  const before = text.slice(Math.max(0, pos - 50), pos);
+  // 100-char window so long "Gain X $m[or] Y $m[or] Z" lists don't lose the verb.
+  const before = text.slice(Math.max(0, pos - 100), pos);
   // Token inside $l[...] trigger label → it's what triggers the effect, not an action target
   if (/\$l\[[^\]]*$/.test(before)) return 'triggered-by';
   const tail = before.slice(-30);
   if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
       /\bat least\s+\S+\s*$/i.test(tail)) return 'scales';
   if (/\b(?:Remove|Steal|Cleanse|remove|steal|cleanse)\b[^.;]{0,50}$/.test(before)) return 'removes';
+  // 80-char clause limit covers "Gain X $m[or] Y $m[or] Z" (≤52 chars between Gain and last token).
   // "into N <X>" covers "Convert N health into 100 <Block>" — the conversion target.
-  if (/\b(?:Gain|Inflict|gain|inflict|into)\b[^.;]{0,50}$/.test(before)) return 'generates';
+  if (/\b(?:Gain|Inflict|gain|inflict|into)\b[^.;]{0,80}$/.test(before)) return 'generates';
   if (/\b(?:Use|use)\b[^.;]{0,50}$/.test(before)) return 'consumes';
   return 'scales';
 }
@@ -336,9 +338,9 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       // "cleanse N debuff" reads as removing debuffs from self
       const cleanseM = /\bcleanse\b[^.;]{0,30}\bdebuffs?\b/i.exec(t);
       if (cleanseM) out.push({ role: 'removes', position: cleanseM.index });
-      // Standard verb scan (Inflict / Remove debuffs)
+      // Standard verb scan (Inflict / Remove / Scales-with debuffs).
+      // 'scales' is allowed here — "for each debuff" is a real interaction (e.g. Darksaber).
       for (const x of classifyMatches(t, /\bdebuffs?\b/g)) {
-        if (x.role === 'scales') continue;
         // For triggered-by, check if the $l[...] label says "Self-inflicted" → (Self) badge
         let target: 'self' | 'enemy' | undefined;
         if (x.role === 'triggered-by') {
