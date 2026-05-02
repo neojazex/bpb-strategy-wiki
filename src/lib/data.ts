@@ -227,11 +227,21 @@ function classifyOccurrence(text: string, pos: number): EffectRole {
   const tail = before.slice(-30);
   if (/(?:for each|per|chance for each)\s*$/i.test(tail) ||
       /\bat least\s+\S+\s*$/i.test(tail)) return 'scales';
-  if (/\b(?:Remove|Steal|Cleanse|Destroy|remove|steal|cleanse|destroy)\b[^.;]{0,50}$/.test(before)) return 'removes';
-  // 80-char clause limit covers "Gain X $m[or] Y $m[or] Z" (≤52 chars between Gain and last token).
+
+  // Split at hard sentence boundaries (. ; ) but not at decimal numbers (1.6s).
+  // Take the last segment so "Remove X and gain Y" classifies Y by its own verb
+  // (gain → generates) rather than the earlier Remove.
+  const clause = before.split(/(?<!\d)[.;]/).pop() ?? before;
+  // Walk all verb matches and keep only the last one — it's the most recent action.
+  const verbRe = /\b(Remove|Steal|Cleanse|Destroy|Gain|Inflict|Use|remove|steal|cleanse|destroy|gain|inflict|into|use)\b/g;
+  let lastVerb = '';
+  let lm: RegExpExecArray | null;
+  while ((lm = verbRe.exec(clause)) !== null) lastVerb = lm[1].toLowerCase();
+
+  if (/^(?:remove|steal|cleanse|destroy)$/.test(lastVerb)) return 'removes';
   // "into N <X>" covers "Convert N health into 100 <Block>" — the conversion target.
-  if (/\b(?:Gain|Inflict|gain|inflict|into)\b[^.;]{0,80}$/.test(before)) return 'generates';
-  if (/\b(?:Use|use)\b[^.;]{0,50}$/.test(before)) return 'consumes';
+  if (/^(?:gain|inflict|into)$/.test(lastVerb)) return 'generates';
+  if (lastVerb === 'use') return 'consumes';
   return 'scales';
 }
 
@@ -341,10 +351,10 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       // Standard verb scan (Inflict / Remove / Scales-with debuffs).
       // 'scales' is allowed here — "for each debuff" is a real interaction (e.g. Darksaber).
       for (const x of classifyMatches(t, /\bdebuffs?\b/g)) {
-        // "resist debuffs" is captured by the Resistance detector — skip to avoid
-        // a misleading 'Scales with Debuff' chip on items like Poison Ivy.
-        const ctx = t.slice(Math.max(0, x.position - 30), x.position);
-        if (/\bresist\b/i.test(ctx)) continue;
+        // "resist debuffs" → Resistance detector. "opponent's debuffs from cleansing"
+        // → anti-cleanse mechanic captured by Resistance, not a scaling relationship.
+        const ctx = t.slice(Math.max(0, x.position - 30), x.position + 20);
+        if (/\bresist\b/i.test(ctx) || /\bcleansing\b/i.test(ctx)) continue;
         // For triggered-by, check if the $l[...] label says "Self-inflicted" → (Self) badge
         let target: 'self' | 'enemy' | undefined;
         if (x.role === 'triggered-by') {
@@ -624,15 +634,23 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
     }
   },
   {
-    // Passive chance to ignore incoming debuffs, stuns, crits, or specific effects.
-    // Covers "Resist N debuffs", "chance to resist stuns", "resist <Poison>", etc.
+    // Passive protection from negative effects. Three forms:
+    //   "Resist N debuffs/stuns/critical hits/<Token>" — explicit resist
+    //   "protect your buffs from removal"              — buff-strip immunity
+    //   "opponent's debuffs from cleansing"            — anti-cleanse lock
     name: 'Resistance', kind: 'buff',
     detect: (t): ImplicitMatch[] => {
-      const re = /\bresists?\b[^.;]{0,50}(?:debuffs?|stuns?|critical\s+hits?|<\w+>)/gi;
+      const patterns = [
+        /\bresists?\b[^.;]{0,50}(?:debuffs?|stuns?|critical\s+hits?|<\w+>)/gi,
+        /\bprotect\b[^.;]{0,40}\bbuffs?\b[^.;]{0,20}\bremoval\b/gi,
+        /\bdebuffs?\b[^.;]{0,20}\bcleansing\b/gi,
+      ];
       const seen = new Map<EffectRole, number>();
       let m: RegExpExecArray | null;
-      while ((m = re.exec(t)) !== null) {
-        if (!seen.has('generates')) seen.set('generates', m.index);
+      for (const re of patterns) {
+        while ((m = re.exec(t)) !== null) {
+          if (!seen.has('generates')) seen.set('generates', m.index);
+        }
       }
       return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
     }
