@@ -485,6 +485,44 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
     }
   },
+  {
+    // Health used as an explicit cost component, e.g. "27 $m[health:]" in Djinn Lamp's
+    // Use trigger. Distinct from Maximum Health (which modifies the health pool itself).
+    name: 'Health', kind: 'meta',
+    detect: (t): ImplicitMatch[] => {
+      const results: ImplicitMatch[] = [];
+      const seen = new Set<string>();
+      // "N health:" or "N $style[health:]" — number immediately before, colon marks it as cost
+      const costRe = /\b\d+\s*(?:\$\w+\[)?health[\]]*:/gi;
+      let m: RegExpExecArray | null;
+      while ((m = costRe.exec(t)) !== null) {
+        if (!seen.has('consumes')) {
+          seen.add('consumes');
+          results.push({ role: 'consumes', position: m.index });
+        }
+      }
+      return results;
+    }
+  },
+  {
+    // Permanent weapon damage bonus granted by the item: "Give the <Star> $h[Weapon] +N damage (once)"
+    // or more broadly "give ... +N damage". Only fires for explicit damage grants, not Empower stacks.
+    name: 'Weapon Damage', kind: 'buff',
+    detect: (t): ImplicitMatch[] => {
+      const seen = new Map<EffectRole, number>();
+      // Most specific: "+N damage (once)" — the game's phrasing for a one-time weapon upgrade
+      const onceRe = /\+\d+\s+damage\s*\(\s*once\s*\)/i;
+      let m = onceRe.exec(t);
+      if (m && !seen.has('generates')) seen.set('generates', m.index);
+      // Broader: "give ... +N damage" within the same clause
+      if (!seen.has('generates')) {
+        const giveRe = /\bgive\b[^.;]{0,60}\+\d+\s+damage\b/i;
+        m = giveRe.exec(t);
+        if (m) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
 ];
 
 // For an item, return one chip per (effect, role) tuple — both tokenized and
