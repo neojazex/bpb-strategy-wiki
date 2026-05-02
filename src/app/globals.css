@@ -132,8 +132,10 @@ button { font-family: inherit; cursor: pointer; }
 .items-toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .search-box { flex: 1; max-width: 480px; position: relative; }
 .search-box .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-3); }
-.search-box input { width: 100%; padding: 10px 14px 10px 38px; background: var(--bg-card); border: 1px solid var(--rule-2); border-radius: 8px; font-size: 0.9rem; color: var(--ink); font-family: inherit; transition: border-color 0.12s, box-shadow 0.12s; }
+.search-box input { width: 100%; padding: 10px 34px 10px 38px; background: var(--bg-card); border: 1px solid var(--rule-2); border-radius: 8px; font-size: 0.9rem; color: var(--ink); font-family: inherit; transition: border-color 0.12s, box-shadow 0.12s; }
 .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search-clear { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--ink-3); cursor: pointer; font-size: 1.15rem; line-height: 1; padding: 2px 5px; border-radius: 4px; transition: color 0.1s; }
+.search-clear:hover { color: var(--ink); }
 .count-pill { font-size: 0.78rem; font-weight: 500; color: var(--ink-3); padding: 6px 12px; background: var(--bg-soft); border-radius: 6px; }
 .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 24px; flex-wrap: wrap; }

@@ -440,6 +440,9 @@ function ItemsPage({ items, selected, onSelect, onClose, onNavigateEffect, focus
         <div className="search-box">
           <span className="icon">⌕</span>
           <input type="text" placeholder="Search items, effects, types…" value={query} onChange={e => setQuery(e.target.value)} />
+          {query && (
+            <button className="search-clear" onClick={() => setQuery('')} aria-label="Clear search">×</button>
+          )}
         </div>
         <div className="count-pill">{filtered.length} / {items.length}</div>
       </div>
