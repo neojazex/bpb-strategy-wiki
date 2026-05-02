@@ -488,19 +488,27 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
     }
   },
   {
-    // Health used as an explicit cost component, e.g. "27 $m[health:]" in Djinn Lamp's
-    // Use trigger. Distinct from Maximum Health (which modifies the health pool itself).
+    // Health used as an explicit cost component. Two phrasings:
+    //   "N $m[health:]"         — Djinn Lamp (cost listed with colon)
+    //   "Convert N health into" — Vampiric Armor, Stone Skin Potions
+    // Distinct from Maximum Health (which modifies the health pool size).
     name: 'Health', kind: 'meta',
     detect: (t): ImplicitMatch[] => {
       const results: ImplicitMatch[] = [];
       const seen = new Set<string>();
-      // "N health:" or "N $style[health:]" — number immediately before, colon marks it as cost
-      const costRe = /\b\d+\s*(?:\$\w+\[)?health[\]]*:/gi;
+      const patterns = [
+        // "N health:" or "N $style[health:]" — number immediately before, colon marks it as cost
+        /\b\d+\s*(?:\$\w+\[)?health[\]]*:/gi,
+        // "convert N health" — trading health for another resource
+        /\bconvert\s+\d+\s+(?:\$\w+\[)?health\b/gi,
+      ];
       let m: RegExpExecArray | null;
-      while ((m = costRe.exec(t)) !== null) {
-        if (!seen.has('consumes')) {
-          seen.add('consumes');
-          results.push({ role: 'consumes', position: m.index });
+      for (const re of patterns) {
+        while ((m = re.exec(t)) !== null) {
+          if (!seen.has('consumes')) {
+            seen.add('consumes');
+            results.push({ role: 'consumes', position: m.index });
+          }
         }
       }
       return results;
