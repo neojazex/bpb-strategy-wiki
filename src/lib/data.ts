@@ -566,6 +566,40 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
     }
   },
+  {
+    // Lifesteal expressed as a percentage stat rather than <Vampirism> stacks.
+    // Common in Rubies ("Gain 35% lifesteal"), potions, and battle-rage items.
+    name: 'Lifesteal', kind: 'buff',
+    detect: (t): ImplicitMatch[] => {
+      const re = /\blifesteal\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    // Healing amplification — boosts the amount healed, distinct from generating
+    // a heal (Heal detector) or reducing opponent healing (Healing Reduction).
+    // Patterns: "healing is increased by N%", "heal N% more", "heals N% more".
+    name: 'Healing', kind: 'buff',
+    detect: (t): ImplicitMatch[] => {
+      const patterns = [
+        /\bhealing\s+is\s+increased\b/gi,
+        /\bheals?\s+\d+%\s+more\b/gi,
+      ];
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      for (const re of patterns) {
+        while ((m = re.exec(t)) !== null) {
+          if (!seen.has('generates')) seen.set('generates', m.index);
+        }
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
 ];
 
 // For an item, return one chip per (effect, role) tuple — both tokenized and
