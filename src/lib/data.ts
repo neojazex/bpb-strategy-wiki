@@ -154,9 +154,11 @@ export function effectIcon(name: string): string | null {
   return e.icon ?? null;
 }
 
+const REMOVE_VERB_RE = /\b(?:Destroy|Remove)\s+[\d.]+\s*$/i;
+
 export function parseEffect(str: string) {
   if (!str) return [];
-  const out: Array<{ kind: string; text?: string; style?: string; name?: string }> = [];
+  const out: Array<{ kind: string; text?: string; style?: string; name?: string; remove?: boolean }> = [];
   let i = 0;
   const re = /\$(l|h|g|m|red)\[([^\]]*)\]|<([^>]+)>/g;
   let m: RegExpExecArray | null;
@@ -165,7 +167,8 @@ export function parseEffect(str: string) {
     if (m[1]) {
       out.push({ kind: 'styled', style: m[1], text: m[2] });
     } else if (m[3]) {
-      out.push({ kind: 'token', name: m[3] });
+      const remove = REMOVE_VERB_RE.test(str.slice(0, m.index));
+      out.push({ kind: 'token', name: m[3], remove });
     }
     i = re.lastIndex;
   }

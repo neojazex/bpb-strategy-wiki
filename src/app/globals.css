@@ -193,6 +193,7 @@ button { font-family: inherit; cursor: pointer; }
 .effect-text .tag.buff { color: var(--buff); border-color: rgba(5,150,105,0.25); background: rgba(5,150,105,0.06); }
 .effect-text .tag.debuff { color: var(--debuff); border-color: rgba(220,38,38,0.25); background: rgba(220,38,38,0.06); }
 .effect-text .tag.elem { color: var(--ink-2); }
+.effect-text .tag.remove { color: #c47a1a; border-color: rgba(196,122,26,0.3); background: rgba(196,122,26,0.08); }
 .effect-text .tag.no-icon { padding: 1px 7px; }
 .gold-inline { display: inline-flex; align-items: center; gap: 3px; vertical-align: -2px; }
 .gold-inline img { width: 13px; height: 13px; }

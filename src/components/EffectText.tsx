@@ -23,7 +23,7 @@ export default function EffectText({ text, onTokenClick }: Props) {
               </span>
             );
           }
-          const kind = tokenKind(name);
+          const kind = p.remove ? 'remove' : tokenKind(name);
           const icon = effectIcon(name);
           return (
             <span
