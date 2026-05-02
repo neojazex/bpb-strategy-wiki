@@ -525,6 +525,39 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
       return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
     }
   },
+  {
+    // Permanent weapon damage gains: "gain N damage" (recurring on-hit, start of battle, etc.).
+    // Distinct from Weapon Damage (one-time grant via "give +N damage (once)").
+    name: 'Damage', kind: 'buff',
+    detect: (t): ImplicitMatch[] => {
+      const re = /\bgain\s+\d+\s+damage\b/gi;
+      const seen = new Map<EffectRole, number>();
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        if (!seen.has('generates')) seen.set('generates', m.index);
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
+  {
+    // Speed at which an item's trigger fires. Covers both "trigger N% faster" (most items)
+    // and "attack N% faster" (weapons like Null Blade, Crossblades).
+    name: 'Trigger Speed', kind: 'buff',
+    detect: (t): ImplicitMatch[] => {
+      const seen = new Map<EffectRole, number>();
+      const patterns = [
+        /\btrigger\s+\d+%\s+faster\b/gi,
+        /\battack\s+\d+%\s+faster\b/gi,
+      ];
+      let m: RegExpExecArray | null;
+      for (const re of patterns) {
+        while ((m = re.exec(t)) !== null) {
+          if (!seen.has('generates')) seen.set('generates', m.index);
+        }
+      }
+      return Array.from(seen.entries()).map(([role, position]) => ({ role, position }));
+    }
+  },
 ];
 
 // For an item, return one chip per (effect, role) tuple — both tokenized and
