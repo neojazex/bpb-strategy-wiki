@@ -332,7 +332,7 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
   {
     name: 'Debuff', kind: 'meta',
     detect: (t) => {
-      const out: { role: EffectRole; position: number }[] = [];
+      const out: ImplicitMatch[] = [];
       // "cleanse N debuff" reads as removing debuffs from self
       const cleanseM = /\bcleanse\b[^.;]{0,30}\bdebuffs?\b/i.exec(t);
       if (cleanseM) out.push({ role: 'removes', position: cleanseM.index });
