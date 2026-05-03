@@ -712,6 +712,17 @@ export function effectRolesForItem(item: import('./types').Item): InteractionChi
       const tgt = (role === 'generates') ? detectOccurrenceTarget(text, sm.index) : undefined;
       const key = `${role}:${tgt ?? ''}`;
       if (!chipMap.has(key)) chipMap.set(key, { role, target: tgt, position: sm.index });
+      // "to both players" / "both players" after token → also emit the opposite-target chip.
+      // e.g. "Inflict 3 <Blind> to $red[both] players" → plain chip (enemy default) + Self chip.
+      if (role === 'generates') {
+        const tokenEnd = text.indexOf('>', sm.index) + 1;
+        const after = text.slice(tokenEnd, Math.min(text.length, tokenEnd + 35));
+        if (/\bboth\b/i.test(after)) {
+          const altTgt: 'self' | 'enemy' | undefined = tgt === 'self' ? undefined : 'self';
+          const altKey = `${role}:${altTgt ?? ''}`;
+          if (!chipMap.has(altKey)) chipMap.set(altKey, { role, target: altTgt, position: sm.index });
+        }
+      }
     }
     for (const { role, target, position } of chipMap.values()) {
       chips.push({ effect: resolved, kind, role, icon, navigable: true, position, target });
