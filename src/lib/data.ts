@@ -442,6 +442,8 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
         /\btakes?\s+\d+%?\s+less\s+damage\b/i,
         /\bdamage\s+(?:is\s+)?reduced\b/i,
         /\bless\s+damage\b/i,
+        // "players take -35% damage" (Turtle) — negative modifier on damage taken
+        /\btakes?\s+-\d+%\s+damage\b/i,
       ];
       for (const pat of patterns) {
         const m = pat.exec(t);
@@ -471,9 +473,14 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
     detect: (t) => {
       const results: ImplicitMatch[] = [];
       const seen = new Set<string>();
+      // Generates: "Regenerate N stamina" — restoring the stamina resource
+      const generateRe = /\bregenerate\s+\d+\s+stamina\b/gi;
+      let m: RegExpExecArray | null;
+      while ((m = generateRe.exec(t)) !== null) {
+        if (!seen.has('generates')) { seen.add('generates'); results.push({ role: 'generates', position: m.index }); }
+      }
       // Consumes: "Use [up to] N stamina" or "[N] stamina used" (inline, not trigger label)
       const consumeRe = /\buse\s+(?:up\s+to\s+)?[\d$\w]+\s+stamina\b(?!\s*\])/gi;
-      let m: RegExpExecArray | null;
       while ((m = consumeRe.exec(t)) !== null) {
         if (!seen.has('consumes')) { seen.add('consumes'); results.push({ role: 'consumes', position: m.index }); }
       }
@@ -568,7 +575,7 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
     detect: (t): ImplicitMatch[] => {
       const seen = new Map<EffectRole, number>();
       const patterns = [
-        /\btrigger\s+\d+%\s+faster\b/gi,
+        /\btriggers?\s+\d+%\s+faster\b/gi,  // "Triggers 10% faster" and "trigger 30% faster"
         /\battack\s+\d+%\s+faster\b/gi,
       ];
       let m: RegExpExecArray | null;
