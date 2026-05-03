@@ -435,21 +435,35 @@ const IMPLICIT_EFFECTS: { name: string; kind: InteractionKind; detect: ImplicitD
   },
   {
     name: 'Damage Reduction', kind: 'buff',
-    detect: (t) => {
+    detect: (t): ImplicitMatch[] => {
       // Various phrasings for taking less damage
       const patterns = [
         /\breduce[s]?\s+damage\s+taken\b/i,
         /\btakes?\s+\d+%?\s+less\s+damage\b/i,
         /\bdamage\s+(?:is\s+)?reduced\b/i,
         /\bless\s+damage\b/i,
-        // "players take -35% damage" (Turtle) — negative modifier on damage taken
+        // "players take -35% damage" (Turtle/Sir Sand/No Rush Please) — negative modifier on damage taken
         /\btakes?\s+-\d+%\s+damage\b/i,
       ];
+      const results: ImplicitMatch[] = [];
+      const seen = new Set<string>();
       for (const pat of patterns) {
         const m = pat.exec(t);
-        if (m) return [{ role: 'generates' as EffectRole, position: m.index }];
+        if (m) {
+          if (!seen.has('generates:')) {
+            seen.add('generates:');
+            results.push({ role: 'generates' as EffectRole, position: m.index });
+          }
+          // "Both players take..." → also emit an enemy-targeted chip
+          const ctx = t.slice(Math.max(0, m.index - 40), m.index + 10);
+          if (/\bboth\b/i.test(ctx) && !seen.has('generates:enemy')) {
+            seen.add('generates:enemy');
+            results.push({ role: 'generates' as EffectRole, position: m.index, target: 'enemy' });
+          }
+          break; // one pattern matched, no need to check further
+        }
       }
-      return [];
+      return results;
     }
   },
   {
